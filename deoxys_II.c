@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -166,16 +165,8 @@ uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 	uint8_t* tag = encrypt_tag(xor_tag, key, nonce);
 	free(xor_tag);
 
-	printf("\ntag: \n");
-	for (int i = 0; i < TAG_LEN; i++) {
-		printf("%x ", tag[i]);
-	}
-	printf("\nad: \n");
 	uint32_t ciphertext_size;
 	uint8_t* ciphertext = encrypt_message(&ciphertext_size, buffer_message, buffer_message_size, key, tag, nonce);
-
-	printf("Ciphertext_size %i\n", ciphertext_size);
-
 
 	uint8_t* auth_cipher = calloc(ciphertext_size + TAG_LEN, sizeof(uint8_t));
 	for (unsigned long long i = 0; i < ciphertext_size; i++)
@@ -190,46 +181,3 @@ uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 
 }
 
-
-
-
-int main()
-{
-	uint8_t* key = calloc(32, sizeof(uint8_t));
-	uint8_t arr_key[32] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
-	memcpy(key, arr_key, 32);
-
-	uint8_t* nonce = calloc(15, sizeof(uint8_t));
-	uint8_t arr_nonce[15] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e};
-	memcpy(nonce, arr_nonce, 15);
-	uint8_t* message = calloc(0, sizeof(uint8_t));
-	uint8_t* ad = calloc(0, sizeof(uint8_t));
-	printf("Key: \n");
-	for (int i = 0; i < 32; i++) {
-		printf("%i", key[i]);
-	}
-	printf("\nNonce: \n");
-	for (int i = 0; i < 15; i++) {
-		printf("%i", nonce[i]);
-	}
-	printf("\nmessage: \n");
-	for (int i = 0; i < 0; i++) {
-		printf("%i", message[i]);
-	}
-	printf("\nad: \n");
-	for (int i = 0; i < 0; i++) {
-		printf("%i", ad[i]);
-	}
-	printf("\n");
-	uint8_t* crypt = Deoxys_II_encrypt_buffer(key, nonce, message, 0, ad, 0);
-
-	printf("Cipher result:\n");
-	for (int i = 0; i < TAG_LEN; i++) {
-		printf("%x ", crypt[i]);
-	}
-	printf("\nShould be: \n");
-	printf("2b 97 bd 77 71 2f 0c de 97 53 09 95 9d fe 1d 7c\n");
-
-	free(crypt);
-	return 0;
-}
