@@ -18,34 +18,33 @@ static const uint8_t RCON[17] = {
 
 
 /**
-	Computes the xor of first and second bytewise
-	both input arrays must be of size BLOCK_LEN
-	also deallocates the input arrays 
+	Computes the xor of the first three inputs with the round constant
+	Loop is unrolled since most entries in the round constant stay constant between rounds
 */
-uint8_t* XOR_block_nonfree(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t* fourth)
+uint8_t* XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
 {
 	uint8_t* XOR = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
-        for (int i = 0; i < INTERNAL_STATE_SIZE; i++)
-		XOR[i] = first[i] ^ second[i] ^ third[i] ^ fourth[i];
+	XOR[0] = first[0] ^ second[0] ^ third[0] ^ 1;
+	XOR[1] = first[1] ^ second[1] ^ third[1] ^ 2;
+	XOR[2] = first[2] ^ second[2] ^ third[2] ^ 4;
+	XOR[3] = first[3] ^ second[3] ^ third[3] ^ 8;
+
+        for (int i = 4; i < 8; i++)
+		XOR[i] = first[i] ^ second[i] ^ third[i] ^ constant;
+
+        for (int i = 8; i < 16; i++)
+		XOR[i] = first[i] ^ second[i] ^ third[i];
+
 	return XOR;
 }
 
-uint8_t* calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, uint8_t* RCi) {
-	return XOR_block_nonfree(tk1, tk2, tk3, RCi);
+uint8_t* calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
+	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index]);
 
-}
-
-uint8_t* getRC(int i) {
-	uint8_t* RCi = calloc(16, sizeof(uint8_t));
-	uint8_t tmp[16] = {1, 2, 4, 8, RCON[i], RCON[i], RCON[i], RCON[i], 0, 0, 0, 0, 0, 0, 0, 0};
-	memcpy(RCi, tmp, 16);
-	return RCi;
 }
 
 void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int i) {
-	uint8_t* RCi = getRC(i);
-	uint8_t* subtweakey = calculate_subtweakey(tk1, tk2, tk3, RCi);
-	free(RCi);
+	uint8_t* subtweakey = calculate_subtweakey(tk1, tk2, tk3, i);
 
 	AddRoundKey(internal_state, subtweakey);
 	free(subtweakey);
