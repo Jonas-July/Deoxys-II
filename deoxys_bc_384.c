@@ -1,8 +1,8 @@
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "tiny_aes.h"
+#include "deoxys_bc_384.h"
 
 #define TWEAKEY_SIZE 16 //tweakey is split into 3 parts of 128bit
 #define BLOCK_LEN 16 //Block length in Deoxys is 128 bit only
@@ -11,28 +11,40 @@
 
 static const uint8_t h[16] = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
 
+// The round constant word array, Rcon[i], contains the values given by
+// RCON values as given in table A.3
+static const uint8_t RCON[17] = {
+  0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72 };
+
 
 /**
 	Computes the xor of first and second bytewise
 	both input arrays must be of size BLOCK_LEN
 	also deallocates the input arrays 
 */
-uint8_t* XOR_block_nonfree(uint8_t* first, uint8_t* second)
+uint8_t* XOR_block_nonfree(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t* fourth)
 {
+	uint8_t* XOR = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
         for (int i = 0; i < INTERNAL_STATE_SIZE; i++)
-		first[i] ^= second[i];
-	return first;
+		XOR[i] = first[i] ^ second[i] ^ third[i] ^ fourth[i];
+	return XOR;
 }
 
 uint8_t* calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, uint8_t* RCi) {
-	return XOR_block_nonfree(XOR_block_nonfree(XOR_block_nonfree(RCi, tk1), tk2), tk3);
+	return XOR_block_nonfree(tk1, tk2, tk3, RCi);
 
+}
+
+uint8_t* getRC(int i) {
+	uint8_t* RCi = calloc(16, sizeof(uint8_t));
+	uint8_t tmp[16] = {1, 2, 4, 8, RCON[i], RCON[i], RCON[i], RCON[i], 0, 0, 0, 0, 0, 0, 0, 0};
+	memcpy(RCi, tmp, 16);
+	return RCi;
 }
 
 void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int i) {
 	uint8_t* RCi = getRC(i);
-	uint8_t* subtweakey = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
-	memcpy(subtweakey, calculate_subtweakey(tk1, tk2, tk3, RCi), TWEAKEY_SIZE);
+	uint8_t* subtweakey = calculate_subtweakey(tk1, tk2, tk3, RCi);
 	free(RCi);
 
 	AddRoundKey(internal_state, subtweakey);

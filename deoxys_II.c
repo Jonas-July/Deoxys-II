@@ -4,6 +4,11 @@
 #include "deoxys_II.h"
 #include "deoxys_bc_384.h"
 
+#define BLOCK_LEN	16 //Block length in Deoxys is 128 bit only
+#define TAG_LEN		BLOCK_LEN //Tag length in Deoxys is 128 bit only
+#define TWEAK_LEN	16 //Tweak length in Deoxys is 128 bit
+#define NONCE_LEN	15 //Nonce length in Deoxys-II is 120 bit
+
 /**
 	buffer contains the message to be padded
 	buffer_len must be greater than zero and less than BLOCK_LEN

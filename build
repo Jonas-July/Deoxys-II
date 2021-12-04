@@ -1,0 +1,1 @@
+gcc -o test test.c deoxys_II.c deoxys_bc_384.c tiny_aes.c
