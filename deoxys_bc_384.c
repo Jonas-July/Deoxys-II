@@ -33,7 +33,7 @@ v16si XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t c
 	return res;
 }
 
-v16si calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
+static v16si calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
 	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index]);
 
 }
