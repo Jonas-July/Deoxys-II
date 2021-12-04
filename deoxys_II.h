@@ -19,8 +19,6 @@ void Deoxys_II_decrypt_buffer(	uint8_t const* key, uint8_t const* nonce, uint8_t
 				uint8_t const* buffer_ciphertext, uint32_t buffer_ciphertext_size, 
 				uint8_t const* buffer_ad, uint32_t buffer_ad_size);
 
-uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* message);
-
 
 
 #endif
