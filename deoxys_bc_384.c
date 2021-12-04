@@ -21,6 +21,30 @@ static const uint8_t RCON[17] = {
 	Computes the xor of the first three inputs with the round constant
 	Loop is unrolled since most entries in the round constant stay constant between rounds
 */
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+
+v16si XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
+{
+
+	v16si RCON = {1, 2, 4, 8, constant, constant, constant, constant, 0, 0, 0, 0, 0, 0, 0, 0};
+	v16si res = (*((v16si*)first)) ^ (*((v16si*)second)) ^ (*((v16si*)third)) ^ RCON;
+
+	return res;
+}
+
+v16si calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
+	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index]);
+
+}
+
+void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int i) {
+	v16si subtweakey = calculate_subtweakey(tk1, tk2, tk3, i);
+
+	AddRoundKey(internal_state, (uint8_t*)(&subtweakey));
+}
+
+#else
 uint8_t* XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
 {
 	uint8_t* XOR = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
@@ -49,6 +73,8 @@ void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t
 	AddRoundKey(internal_state, subtweakey);
 	free(subtweakey);
 }
+
+#endif // XOR4_subtweakey
 
 #if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
 typedef uint8_t v16si __attribute__ ((vector_size (16)));
@@ -134,7 +160,7 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 }
 
 
-#endif // GCC_VECTOR_EXTENSIONS
+#endif // GCC_VECTOR_EXTENSIONS for next tweakeys
 
 
 uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
