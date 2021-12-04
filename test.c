@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "deoxys_II.h"
 
@@ -141,6 +142,46 @@ int test_case_extreme() {
 	return failed;
 }
 
+
+// Performance test
+int performance_test_1MB() {
+	clock_t begin = clock();
+
+	uint8_t key[32] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
+	uint8_t nonce[15] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e};
+	uint8_t* message = calloc(1048576, sizeof(uint8_t));
+	uint8_t* ad = calloc(1048576, sizeof(uint8_t));
+
+	uint8_t* crypt = Deoxys_II_encrypt_buffer(key, nonce, message, 1048576, ad, 1048576);
+
+	clock_t end = clock();
+	free(crypt);
+
+	double taken = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("Time taken for 1MB: %fs\n", taken);
+	return taken;
+}
+
+// Performance test
+int performance_test_1GB() {
+
+	uint8_t key[32] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
+	uint8_t nonce[15] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e};
+	uint8_t* message = calloc(1073741824, sizeof(uint8_t));
+	uint8_t* ad = calloc(1073741824, sizeof(uint8_t));
+
+	clock_t begin = clock();
+	uint8_t* crypt = Deoxys_II_encrypt_buffer(key, nonce, message, 1073741824, ad, 1073741824);
+	clock_t end = clock();
+
+	free(crypt);
+
+	double taken = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("Time taken: %f\n", taken);
+	return taken;
+}
+
+
 int main()
 {
 	test_case_no_message_no_ad();
@@ -152,6 +193,8 @@ int main()
 	test_case_with_message_with_ad2();
 	test_case_extreme();
 
+	performance_test_1MB();
+	//performance_test_1GB();
 
 	return 0;
 }
