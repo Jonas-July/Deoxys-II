@@ -9,20 +9,27 @@
 #define ROUNDS_NUM 16 //There are 16 AES-like rounds
 #define INTERNAL_STATE_SIZE 16 //There are 16 bytes in the state
 
-static const uint8_t h[16] = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
-
 // The round constant word array, Rcon[i], contains the values given by
 // RCON values as given in table A.3
 static const uint8_t RCON[17] = {
   0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72 };
 
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+static const v16si h = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
+
+#else
+
+static const uint8_t h[16] = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
+
+#endif // GCC_VECTOR_EXTENSIONS Definitions
 
 /**
 	Computes the xor of the first three inputs with the round constant
 	Loop is unrolled since most entries in the round constant stay constant between rounds
 */
 #if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
-typedef uint8_t v16si __attribute__ ((vector_size (16)));
 
 v16si XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
 {
@@ -77,14 +84,12 @@ void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t
 #endif // XOR4_subtweakey
 
 #if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
-typedef uint8_t v16si __attribute__ ((vector_size (16)));
 
 uint8_t* nextTK1(uint8_t* prevTK1) {
 	v16si vec_newTK1 = *((v16si*)prevTK1);
-	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
 	v16si res;
 
-	res = __builtin_shuffle (vec_newTK1, mask);
+	res = __builtin_shuffle (vec_newTK1, h);
 	memcpy(prevTK1, &res, 16);
 	return prevTK1;
 }
@@ -93,11 +98,9 @@ uint8_t* nextTK2(uint8_t* prevTK2) {
 	v16si vec_newTK2 = *((v16si*)prevTK2);
 
 	vec_newTK2 = (vec_newTK2 << 1) | (((vec_newTK2 & 0x80) >> 7) ^ ((vec_newTK2 & 0x20) >> 5));
-
-	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
 	v16si res;
 
-	res = __builtin_shuffle (vec_newTK2, mask);
+	res = __builtin_shuffle (vec_newTK2, h);
 	memcpy(prevTK2, &res, 16);
 	return prevTK2;
 }
@@ -106,11 +109,9 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 	v16si vec_newTK3 = *((v16si*)prevTK3);
 
 	vec_newTK3 = (vec_newTK3 >> 1) | (((vec_newTK3 & 0x01) << 7) ^ ((vec_newTK3 & 0x40) << 1));
-
-	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
 	v16si res;
 
-	res = __builtin_shuffle (vec_newTK3, mask);
+	res = __builtin_shuffle (vec_newTK3, h);
 	memcpy(prevTK3, &res, 16);
 	return prevTK3;
 }
