@@ -50,6 +50,49 @@ void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t
 	free(subtweakey);
 }
 
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+
+uint8_t* nextTK1(uint8_t* prevTK1) {
+	v16si vec_newTK1 = *((v16si*)prevTK1);
+	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
+	v16si res;
+
+	res = __builtin_shuffle (vec_newTK1, mask);
+	memcpy(prevTK1, &res, 16);
+	return prevTK1;
+}
+
+uint8_t* nextTK2(uint8_t* prevTK2) {
+	v16si vec_newTK2 = *((v16si*)prevTK2);
+
+	vec_newTK2 = (vec_newTK2 << 1) | (((vec_newTK2 & 0x80) >> 7) ^ ((vec_newTK2 & 0x20) >> 5));
+
+	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
+	v16si res;
+
+	res = __builtin_shuffle (vec_newTK2, mask);
+	memcpy(prevTK2, &res, 16);
+	return prevTK2;
+}
+
+uint8_t* nextTK3(uint8_t* prevTK3) {
+	v16si vec_newTK3 = *((v16si*)prevTK3);
+
+	vec_newTK3 = (vec_newTK3 >> 1) | (((vec_newTK3 & 0x01) << 7) ^ ((vec_newTK3 & 0x40) << 1));
+
+	v16si mask = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7, 8};
+	v16si res;
+
+	res = __builtin_shuffle (vec_newTK3, mask);
+	memcpy(prevTK3, &res, 16);
+	return prevTK3;
+}
+
+
+
+#else
+
 uint8_t* nextTK1(uint8_t* prevTK1) {
 	uint8_t* newTK1 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
 	for (int i = 0; i < TWEAKEY_SIZE; i++) {
@@ -89,6 +132,9 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 
 	return newTK3;
 }
+
+
+#endif // GCC_VECTOR_EXTENSIONS
 
 
 uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {

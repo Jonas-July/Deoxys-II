@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+// Set to 1 to use vector extensions
+#define GCC_VECTOR_EXTENSIONS 0
+
 /**
 	Version for 256-bit key + 128 bit tweak
 */
