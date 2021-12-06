@@ -56,7 +56,7 @@ static const uint8_t rsbox[256] = {
 
 #else
 
-#define getSBoxValue(num) (subbox( invbox [(num)] ))
+#define getSBoxValue(num) (sbox_calculation( (num) ))
 
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
@@ -72,6 +72,94 @@ uint8_t subbox(uint8_t val) {
       new_val |= (val & (0x01 << 7)) ^ ((val & (0x01 << 3)) << 4) ^ ((val & (0x01 << 4)) << 3) ^ ((val & (0x01 << 5)) << 2) ^ ((val & (0x01 << 6)) << 1); // s7
       return new_val;
 }
+
+// Based on the algorithm described in https://eprint.iacr.org/2015/763.pdf
+// Local version is available under:	fast_hardware_inversion.pdf
+static const uint8_t sbox_calculation(uint8_t input) {
+
+  // Isomorphic transformation
+  uint8_t input_bit[8] = {	(input & (0x01 << 0)) >> 0, (input & (0x01 << 1)) >> 1, (input & (0x01 << 2)) >> 2, (input & (0x01 << 3)) >> 3,
+				  (input & (0x01 << 4)) >> 4, (input & (0x01 << 5)) >> 5, (input & (0x01 << 6)) >> 6, (input & (0x01 << 7)) >> 7 };
+
+  uint8_t val[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  val[0] = (input_bit[1] ^ input_bit[3] ^ input_bit[4] ^ input_bit[5]);
+  val[1] = (input_bit[0] ^ input_bit[2] ^ input_bit[6] ^ input_bit[7]);
+  val[2] = (input_bit[0] ^ input_bit[3] ^ input_bit[7]               );
+  val[3] = (input_bit[5]                                             );
+  val[4] = (input_bit[1] ^ input_bit[2] ^ input_bit[4] ^ input_bit[5]);
+  val[5] = (input_bit[0] ^ input_bit[2] ^ input_bit[4]               );
+  val[6] = (input_bit[0] ^ input_bit[1] ^ input_bit[2] ^ input_bit[7]);
+  val[7] = (input_bit[2] ^ input_bit[3] ^ input_bit[7]               );
+
+
+  //Preparation
+  uint8_t l[5] = {0, val[0], val[1], val[2], val[3]};
+  uint8_t h[5] = {0, val[4], val[5], val[6], val[7]};
+
+
+  // Stage 1
+  uint8_t L[5][5] = {   {0, 0, 0, 0, 0},
+			{0, 0,		  l[1] ^ l[2], l[1] ^ l[3], l[1] ^ l[4]},
+			{0, 0, 0,  	     l[2] ^ l[3], l[2] ^ l[4]},
+			{0, 0, 0, 0,  	  l[3] ^ l[4]},
+			{0, 0, 0, 0, 0} };
+  uint8_t H[5][5] = {   {0, 0, 0, 0, 0},
+			{0, 0,		  h[1] ^ h[2], h[1] ^ h[3], h[1] ^ h[4]},
+			{0, 0, 0,  	     h[2] ^ h[3], h[2] ^ h[4]},
+			{0, 0, 0, 0,  	  h[3] ^ h[4]},
+			{0, 0, 0, 0, 0} };
+
+  uint8_t d[5] = {0, 0, 0, 0, 0};
+  d[0] = (H[1][2] | L[1][2]) ^ (H[3][4] | L[3][4]) ^    (h[2] | l[2])    ^ (h[3] & l[3]);
+  d[1] = (H[1][2] | L[1][2]) ^ (H[1][3] & L[1][3]) ^    (h[3] | l[3])    ^ (h[4] | l[4]);
+  d[2] = (H[1][3] | L[1][3]) ^ (H[1][4] & L[1][4]) ^ (H[2][3] | L[2][3]) ^ (h[4] | l[4]);
+  d[3] = (H[1][4] | L[1][4]) ^ (H[2][3] | L[2][3]) ^ (H[2][4] & L[2][4]) ^ (h[1] | l[1]);
+  d[4] = (H[2][4] | L[2][4]) ^ (H[3][4] | L[3][4]) ^    (h[1] | l[1])    ^ (h[2] & l[2]);
+
+  // Stage 2
+  uint8_t e[5] = {0, 0, 0, 0, 0};
+  e[0] = (d[1] | d[4]) & (d[2] | d[3]);
+  e[1] = ((d[4] ^ 1) & (d[1] ^ d[2])) | ((d[0] & d[4]) & (d[2] | d[3]));
+  e[2] = ((d[3] ^ 1) & (d[2] ^ d[4])) | ((d[0] & d[3]) & (d[1] | d[4]));
+  e[3] = ((d[2] ^ 1) & (d[1] ^ d[3])) | ((d[0] & d[2]) & (d[1] | d[4]));
+  e[4] = ((d[1] ^ 1) & (d[3] ^ d[4])) | ((d[0] & d[1]) & (d[2] | d[3]));
+
+  // Stage 3
+  uint8_t F[5][5] = { {0,		 e[0] ^ e[1], e[0] ^ e[2], e[0] ^ e[3], e[0] ^ e[4]},
+		      {0, 0,	      e[1] ^ e[2], e[1] ^ e[3], e[1] ^ e[4]},
+		      {0, 0, 0,	   e[2] ^ e[3], e[2] ^ e[4]},
+		      {0, 0, 0, 0,	e[3] ^ e[4]},
+		      {0, 0, 0, 0, 0} };
+
+
+  uint8_t res_h[5] = {0, 0, 0, 0, 0};
+  res_h[0] = (L[1][4] & F[1][4]) ^ (L[2][3] & F[2][3]);
+  res_h[1] = (   l[1] & F[0][1]) ^ (L[2][4] & F[2][4]);
+  res_h[2] = (   l[2] & F[0][2]) ^ (L[3][4] & F[3][4]);
+  res_h[3] = (   l[3] & F[0][3]) ^ (L[1][2] & F[1][2]);
+  res_h[4] = (   l[4] & F[0][4]) ^ (L[1][3] & F[1][3]);
+
+  uint8_t res_l[5] = {0, 0, 0, 0, 0};
+  res_l[0] = (H[1][4] & F[1][4]) ^ (H[2][3] & F[2][3]);
+  res_l[1] = (   h[1] & F[0][1]) ^ (H[2][4] & F[2][4]);
+  res_l[2] = (   h[2] & F[0][2]) ^ (H[3][4] & F[3][4]);
+  res_l[3] = (   h[3] & F[0][3]) ^ (H[1][2] & F[1][2]);
+  res_l[4] = (   h[4] & F[0][4]) ^ (H[1][3] & F[1][3]);
+
+  // Final transformation back to AES with matrix multiplication
+  uint8_t result = 0x00;
+  result |= (res_l[0] ^ res_l[1] ^ res_l[2] ^ res_l[3]  ^ res_h[0] ^ res_h[3]                      ) << 0;
+  result |= (res_l[2] ^ res_l[3]			^ res_h[0] ^ res_h[1] ^ res_h[2] ^ res_h[4]) << 1;
+  result |= (res_l[0] ^ res_l[1] ^ res_l[2] ^ res_l[3]  ^ res_h[1] ^ res_h[3]                      ) << 2;
+  result |= (res_l[0] ^ res_l[4]			^ res_h[0] ^ res_h[1] ^ res_h[2] ^ res_h[4]) << 3;
+  result |= (res_l[0] ^ res_l[1] ^ res_l[3] ^ res_l[4]  ^ res_h[0] ^ res_h[4]                      ) << 4;
+  result |= (res_l[0] ^ res_l[4]			^ res_h[0] ^ res_h[2] ^ res_h[3] ^ res_h[4]) << 5;
+  result |= (res_l[2] ^ res_l[4]			^ res_h[2] ^ res_h[4]		      ) << 6;
+  result |= (res_l[0] ^ res_l[2]			^ res_h[0] ^ res_h[1] ^ res_h[3] ^ res_h[4]) << 7;
+
+  return result ^ 0x63;
+}
+
 
 // table for multiplicative inverses
 static const uint8_t invbox[256] = {
