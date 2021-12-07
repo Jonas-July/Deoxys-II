@@ -10,6 +10,7 @@ module mkTestInversionAndMultiplication(Empty);
 	Reg#(Bit#(8)) testNr <- mkReg(0);
 
 	Reg#(Bool) testSuccessful <- mkReg(True);
+	Reg#(Bool) done <- mkReg(False);
 				       //0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
 	Bit#(8) expectation[256] = {      0,  31,  20,  24, 145,   8,  12, 166,  83,  98,   4,  72, 157, 180, 200,  21, 
 					169, 225, 170,  30, 153,  58,  36, 147, 206, 183, 193, 204, 255, 199,  17, 163, 
@@ -29,19 +30,22 @@ module mkTestInversionAndMultiplication(Empty);
 					239, 194, 234, 110, 220, 133,  33,  11,  34, 250,  78, 108, 211,  55, 216, 117 };
 
 
-	rule test if (testNr < 255);
-		let result <- iam.invertAndMultiply(testNr);
+	rule testInput if (!done);
+		let result = iam.invertAndMultiply(testNr);
 		let expected = expectation[testNr];
 		$display("Test %0d: %0d should be %0d", testNr, result, expected);
-		testNr <= testNr + 1;
 		testSuccessful <= testSuccessful && (result == expected);
 	endrule
 
-	rule fin if (testNr == 255);
-		let result <- iam.invertAndMultiply(testNr);
-		let expected = expectation[testNr];
-		$display("Test %0d: %0d should be %0d", testNr, result, expected);
-		testSuccessful <= testSuccessful && (result == expected);
+	rule nextTest if (testNr < 255);
+		testNr <= testNr + 1;
+	endrule
+
+	rule nextTestDone if (testNr == 255);
+		done <= True;
+	endrule
+
+	rule fin if (done);
 		$display("Test succeeded: %s", testSuccessful ? "Success!" : "Failed!");
 		$finish();
 	endrule

@@ -2,7 +2,7 @@ package InversionAndMultiplication;
 
 interface InversionAndMultiplicationIfc;
 
-	method ActionValue#( Bit#(8)) invertAndMultiply(Bit#(8) val);
+	method Bit#(8) invertAndMultiply(Bit#(8) val);
 
 endinterface
 
@@ -10,7 +10,7 @@ endinterface
 (* synthesize *)
 module mkInversionAndMultiplication(InversionAndMultiplicationIfc);
 
-	method ActionValue#( Bit#(8)) invertAndMultiply(Bit#(8) input_bit);
+	method Bit#(8) invertAndMultiply(Bit#(8) input_bit);
 
 		// Isomorphic transformation
 		Bit #(8) val;
