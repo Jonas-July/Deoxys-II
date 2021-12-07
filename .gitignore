@@ -1,1 +1,12 @@
 test
+
+
+**.ba
+**.bo
+hardware_implementation/**.h
+hardware_implementation/**.cxx
+hardware_implementation/**.o
+hardware_implementation/**.bspec
+hardware_implementation/**out**
+hardware_implementation/**.v
+
