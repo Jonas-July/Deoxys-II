@@ -2,9 +2,12 @@
 package Testing;
 
 import InversionAndMultiplication::*;
+import TestSubBytes::*;
 
 (* synthesize *)
 module mkTestInversionAndMultiplication(Empty);
+
+	let sub <- mkTestSubBytes();
 
 	InversionAndMultiplicationIfc iam <- mkInversionAndMultiplication;
 	Reg#(Bit#(8)) testNr <- mkReg(0);
@@ -33,7 +36,7 @@ module mkTestInversionAndMultiplication(Empty);
 	rule testInput if (!done);
 		let result = iam.invertAndMultiply(testNr);
 		let expected = expectation[testNr];
-		$display("Test %0d: %0d should be %0d", testNr, result, expected);
+		//$display("Test %0d: %0d should be %0d", testNr, result, expected);
 		testSuccessful <= testSuccessful && (result == expected);
 	endrule
 
@@ -46,7 +49,7 @@ module mkTestInversionAndMultiplication(Empty);
 	endrule
 
 	rule fin if (done);
-		$display("Test succeeded: %s", testSuccessful ? "Success!" : "Failed!");
+		$display("InversionAndMultiplication Test succeeded: %s", testSuccessful ? "Success!" : "Failed!");
 		$finish();
 	endrule
 
