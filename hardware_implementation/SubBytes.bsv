@@ -12,7 +12,7 @@ interface SubBytesIfc;
 
 endinterface
 
-
+(* synthesize *)
 module mkByteSubstitution(SubBytesIfc);
 
 	InversionAndMultiplicationIfc iam <- mkInversionAndMultiplication;

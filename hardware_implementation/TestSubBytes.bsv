@@ -1,43 +1,72 @@
 package TestSubBytes;
 
 import Vector::*;
+
+import TestIfc::*;
+
 import SubBytes::*;
 
 (* synthesize *)
-module mkTestSubBytes();
+module mkTestSubBytes(TestIfc);
 
 	SubBytesIfc sb <- mkByteSubstitution;
 
-	Reg#(int) testNr <- mkReg(0);
-	int length = 3;
 	Vector#(16, Bit#(8)) testCase[3] = {replicate(0), replicate(1), unpack(128'h202122232425262728292a2b2c2d2e2f)};
 	Vector#(16, Bit#(8)) expectation[3] = {replicate(0), unpack(128'h1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f), unpack(128'hd49ef045555c94af57c6869212bb5276)};
 
+	/*
+		Configuration of the test
+	*/
+	String testName = "SubBytes Test";
+	int length = 3;
+	Bool finish = False;
+
+	function Action startTest(int testIndex);
+		return
+			action
+				sb.substitute(testCase[testIndex]);
+			endaction;
+	endfunction
+
+	function Bool checkTest(int testIndex);
+		Vector#(16, Bit#(8)) result = sb.getResult();
+		Vector#(16, Bit#(8)) expected = expectation[testIndex];
+		//$display("SubBytes Test %0d: %0h should be %0h", testIndex, result, expected);
+		return (pack(result) == pack(expected));
+	endfunction
+
+	/*
+		Boilerplate code for testing multi-stage
+	*/
+	Reg#(int) testNr <- mkReg(0);
+
 	Reg#(Bool) testSuccessful <- mkReg(True);
-	Reg#(Bool) done <- mkReg(False);
 	Reg#(Bool) check <- mkReg(False);
 	Reg#(Bool) stop <- mkReg(False);
 
-
-
-	rule testInput if (!check && testNr < length);
-		sb.substitute(testCase[testNr]);
+	rule starting if (!check && testNr < length);
+		startTest(testNr);
 		check <= True;
 	endrule
 
-	rule checkTest if (check && testNr < length);
-		Vector#(16, Bit#(8)) result = sb.getResult();
-		Vector#(16, Bit#(8)) expected = expectation[testNr];
-		$display("SubBytes Test %0d: %0h should be %0h", testNr, result, expected);
-		testSuccessful <= testSuccessful && (pack(result) == pack(expected));
+	rule checking if (check && testNr < length);
+		testSuccessful <= testSuccessful && checkTest(testNr);
 		testNr <= testNr + 1;
 		check <= False;
 	endrule
 
 	rule fin if (!stop && testNr == length);
-		$display("SubBytes Test succeeded: %s", testSuccessful ? "Success!" : "Failed!");
+		$display("%s succeeded: %s", testName, testSuccessful ? "Success!" : "Failed!");
 		stop <= True;
 	endrule
+
+	rule end_test if (stop && finish);
+		$finish();
+	endrule
+
+	method Bool getTestResult() if (stop);
+		return testSuccessful;
+	endmethod
 
 endmodule
 
