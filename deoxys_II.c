@@ -186,3 +186,44 @@ uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 
 }
 
+uint8_t* decrypt_message(uint32_t* ciphertext_size,
+			uint8_t const* buffer_message, uint32_t buffer_message_size,
+			uint8_t const* key, uint8_t const* tag, uint8_t const* nonce)
+{
+	return encrypt_message(ciphertext_size, buffer_message, buffer_message_size, key, tag, nonce);
+}
+
+uint8_t* Deoxys_II_decrypt_buffer(	int* authentication_failed, uint32_t* buffer_message_size,
+					uint8_t const* key, uint8_t const* nonce, uint8_t const* tag,
+					uint8_t const* buffer_ciphertext, uint32_t buffer_ciphertext_size,
+					uint8_t const* buffer_ad, uint32_t buffer_ad_size)
+{
+	uint32_t decrypted_size;
+	uint8_t* buffer_decrypted = decrypt_message(&decrypted_size, buffer_ciphertext, buffer_ciphertext_size, key, tag, nonce);
+
+	uint8_t* null_tag = calloc(TAG_LEN, sizeof(uint8_t));
+
+	uint8_t* tag1 = compute_partial_tag(null_tag, key, 32, 96, buffer_ad, buffer_ad_size);
+	uint8_t* tag2 = compute_partial_tag(null_tag, key,  0, 64, buffer_decrypted, buffer_ciphertext_size);
+	free(null_tag);
+
+	uint8_t* xor_tag = XOR_block(tag1, tag2, TAG_LEN);
+
+	uint8_t* auth_tag = encrypt_tag(xor_tag, key, nonce);
+	free(xor_tag);
+
+	int not_authenticated = memcmp(auth_tag, tag, TAG_LEN) == 0 ? 0 : 1;
+	*authentication_failed = not_authenticated;
+
+	int authenticated = !not_authenticated;
+	*buffer_message_size = 0;
+	uint8_t* buffer_message = NULL;
+	if (authenticated)
+	{
+		*buffer_message_size = decrypted_size;
+		buffer_message = calloc(decrypted_size, sizeof(uint8_t));
+		memcpy(buffer_message, buffer_decrypted, decrypted_size);
+	}
+
+	return buffer_message;
+}
