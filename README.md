@@ -2,6 +2,13 @@
 
 This is an implementation of the Deoxys-II algorithm described in `deoxys_v143.pdf`.
 
+# Usage
+
+The build step requires the GCC compiler.
+
+- Run `./build` to build the tests
+- Run `./test` to run the tests
+
 # Goals
 
 The goal of this exercise is a working implementation of the Deoxys-II-256-128 cipher. Since there is a current lack of test samples, successful en- and decryption would meet the goal.
