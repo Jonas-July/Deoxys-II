@@ -7,20 +7,22 @@ import TestIfc::*;
 
 import TestInversionAndMultiplication::*;
 import TestSubBytes::*;
+import TestShiftRows::*;
 
 (* synthesize *)
 module mkTesting(TestIfc);
 
 	TestIfc sub <- mkTestSubBytes;
 	TestIfc inv <- mkTestInversionAndMultiplication;
+	TestIfc shift <- mkTestShiftRows;
 
-	TestIfc tests[2] = {sub, inv};
+	TestIfc tests[3] = {sub, inv, shift};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "All tests";
-	int length = 2;
+	int length = 3;
 	Bool finish = True;
 
 	function Bool runTest(int testIndex);

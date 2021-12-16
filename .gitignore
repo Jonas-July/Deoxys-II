@@ -9,4 +9,4 @@ hardware_implementation/**.o
 hardware_implementation/**.bspec
 hardware_implementation/**out**
 hardware_implementation/**.v
-
+hardware_implementation/gtkwave/**
