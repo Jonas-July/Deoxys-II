@@ -8,6 +8,8 @@ import TestIfc::*;
 import TestInversionAndMultiplication::*;
 import TestSubBytes::*;
 import TestShiftRows::*;
+import TestMixColumns::*;
+import TestMixSingleColumn::*;
 
 (* synthesize *)
 module mkTesting(TestIfc);
@@ -15,14 +17,16 @@ module mkTesting(TestIfc);
 	TestIfc sub <- mkTestSubBytes;
 	TestIfc inv <- mkTestInversionAndMultiplication;
 	TestIfc shift <- mkTestShiftRows;
+	TestIfc mixcols <- mkTestMixColumns;
+	TestIfc mixsingle <- mkTestMixSingleColumn;
 
-	TestIfc tests[3] = {sub, inv, shift};
+	TestIfc tests[5] = {sub, inv, shift, mixcols, mixsingle};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "All tests";
-	int length = 3;
+	int length = 5;
 	Bool finish = True;
 
 	function Bool runTest(int testIndex);
