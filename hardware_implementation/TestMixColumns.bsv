@@ -4,33 +4,38 @@ import Vector::*;
 
 import TestIfc::*;
 
-//import ShiftRows::*;
+import MixColumns::*;
 
 (* synthesize *)
 module mkTestMixColumns(TestIfc);
 
-	//ShiftRowsIfc sr <- mkShiftRows;
+	MixColumnsIfc mcs <- mkMixColumns;
 
-	Vector#(16, Bit#(8)) testCase[4] = {replicate(0), replicate(1), unpack(128'h2f2e2d2c2b2a29282726252423222120), unpack(128'h5f8ebdec1b4a79a8d706356493c2f120)};
-	Vector#(16, Bit#(8)) expectation[4] = {replicate(0), replicate(1), unpack(128'h2b26212c27222d28232e29242f2a2520), unpack(128'h1b06f1ecd7c2bda8938e79645f4a3520)};
+	Vector#(16, Bit#(8)) testCase[4] = {replicate(0), replicate(1), unpack(128'h455313db455313db455313db455313db), unpack(128'h4d0073642d8a67858a07af3d8dd3a791)};
+	Vector#(16, Bit#(8)) expectation[4] = {replicate(0), replicate(1), unpack(128'hbca14d8ebca14d8ebca14d8ebca14d8e), unpack(128'h45c0cf10239ae31fe019fb1ddd072795)};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "MixColumns Test";
-	int length = 0;
+	int length = 4;
 	Bool finish = False;
 	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 
-		//Vector#(16, Bit#(8)) result = sr.shiftRows(testCase[testIndex]);
-		//Vector#(16, Bit#(8)) expected = expectation[testIndex];
-		return True;//(pack(result) == pack(expected));
+		Vector#(16, Bit#(8)) result = mcs.mixColumns(testCase[testIndex]);
+		Vector#(16, Bit#(8)) expected = expectation[testIndex];
+		return (pack(result) == pack(expected));
 	endfunction
 
 	function Action displayTestData(String testName, int testIndex);
-		return action endaction;
+		return
+			action
+				$display("[%s]Test Number: ", testName, testIndex);
+				$display("[%s]Test Value : %h", testName, testCase[testIndex]);
+				$display("[%s]Test Result: %h", testName, mcs.mixColumns(testCase[testIndex]));
+			endaction;
 	endfunction
 
 	/*

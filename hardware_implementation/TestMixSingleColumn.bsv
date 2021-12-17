@@ -28,7 +28,7 @@ module mkTestMixSingleColumn(TestIfc);
 	String testName = "MixSingleColumn Test";
 	int length = 23;
 	Bool finish = False;
-	Bool displayTests = True;
+	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 
