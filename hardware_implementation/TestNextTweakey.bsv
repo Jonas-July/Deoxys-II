@@ -26,7 +26,7 @@ module mkTestNextTweakey(TestIfc);
 	String testName = "Next Tweakey Test";
 	int length = 12;
 	Bool finish = False;
-	Bool displayTests = True;
+	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 		NextTkIfc uut =   testIndex / 4 == 0 ? ntk1

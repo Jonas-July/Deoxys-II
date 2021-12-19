@@ -48,6 +48,13 @@ module mkTesting(TestIfc);
 		testNr <= testNr + 1;
 	endrule
 
+	Reg#(Bool) bdump <- mkReg(True);
+	rule dump if (bdump);
+		$dumpfile("./gtkwave/test.vcd");
+		$dumpvars();
+		bdump <= False;
+	endrule
+
 	rule fin if (!stop && testNr == length);
 		$display("%s succeeded: %s", testName, testSuccessful ? "Success!" : "Failed!");
 		stop <= True;
