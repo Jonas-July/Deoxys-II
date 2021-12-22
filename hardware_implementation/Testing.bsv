@@ -11,6 +11,7 @@ import TestShiftRows::*;
 import TestMixColumns::*;
 import TestMixSingleColumn::*;
 import TestNextTweakey::*;
+import TestAddSubtweakey::*;
 
 (* synthesize *)
 module mkTesting(TestIfc);
@@ -21,14 +22,15 @@ module mkTesting(TestIfc);
 	TestIfc mixcols <- mkTestMixColumns;
 	TestIfc mixsingle <- mkTestMixSingleColumn;
 	TestIfc nextTK <- mkTestNextTweakey;
+	TestIfc addSTK <- mkTestAddSubtweakey;
 
-	TestIfc tests[6] = {sub, inv, shift, mixcols, mixsingle, nextTK};
+	TestIfc tests[7] = {sub, inv, shift, mixcols, mixsingle, nextTK, addSTK};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "All tests";
-	int length = 6;
+	int length = 7;
 	Bool finish = True;
 
 	function Bool runTest(int testIndex);
