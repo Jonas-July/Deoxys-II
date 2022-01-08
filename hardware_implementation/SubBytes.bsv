@@ -5,37 +5,22 @@ import Vector::*;
 import InversionAndMultiplication::*;
 
 
-interface SubBytesIfc;
+interface SubBytesIfc #(numeric type bytes);
 
-	method Action substitute(Vector#(16, Bit#(8)) in);
-	method Vector#(16, Bit#(8)) getResult();
+	method Vector#(bytes, Bit#(8)) substitute(Vector#(bytes, Bit#(8)) in);
 
 endinterface
 
-(* synthesize *)
-module mkByteSubstitution(SubBytesIfc);
+module mkByteSubstitution #(parameter int bytes)(SubBytesIfc#(bytes))
+	provisos (Add#(0, unused, bytes)); // bytes >= 0
 
-	InversionAndMultiplicationIfc iam <- mkInversionAndMultiplication;
-	InversionAndMultiplicationIfc iam2 <- mkInversionAndMultiplication;
+	Vector#(bytes, InversionAndMultiplicationIfc) inverter <- replicateM(mkInversionAndMultiplication);
 
-	Reg#(UInt#(5)) counter <- mkReg(0); 
-	Reg#(Vector#(16, Bit#(8))) current <- mkReg(newVector);
-
-	rule computeNext if (counter < 16);
-		current[counter] <= iam.invertAndMultiply(current[counter]);
-	endrule
-
-	rule count if (counter < 16);
-		counter <= counter + 1;
-	endrule
-
-	method Action substitute(Vector#(16, Bit#(8)) in) if (counter == 16);
-		current <= in;
-		counter <= 0;
-	endmethod
-
-	method Vector#(16, Bit#(8)) getResult() if (counter == 16);
-		return current;
+	method Vector#(bytes, Bit#(8)) substitute(Vector#(bytes, Bit#(8)) in);
+		Vector#(bytes, Bit#(8)) result = newVector;
+		for (int i=0; i < bytes; i=i+1)
+			result[i] = inverter[i].invertAndMultiply(in[i]);
+		return result;
 	endmethod
 
 endmodule
