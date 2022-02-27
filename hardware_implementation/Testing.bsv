@@ -12,6 +12,7 @@ import TestMixColumns::*;
 import TestMixSingleColumn::*;
 import TestNextTweakey::*;
 import TestAddSubtweakey::*;
+import TestDeoxysBcRounds::*;
 
 (* synthesize *)
 module mkTesting(TestIfc);
@@ -24,13 +25,15 @@ module mkTesting(TestIfc);
 	TestIfc nextTK <- mkTestNextTweakey;
 	TestIfc addSTK <- mkTestAddSubtweakey;
 
-	TestIfc tests[7] = {sub, inv, shift, mixcols, mixsingle, nextTK, addSTK};
+	TestIfc rounds <- mkTestDeoxysBcRound;
+
+	TestIfc tests[8] = {sub, inv, shift, mixcols, mixsingle, nextTK, addSTK, rounds};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "All tests";
-	int length = 7;
+	int length = 8;
 	Bool finish = True;
 
 	function Bool runTest(int testIndex);
