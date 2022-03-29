@@ -26,7 +26,7 @@ module mkTestDeoxysBcRound(TestIfc);
 	String testName = "DeoxysBcRound Test";
 	int length = 2;
 	Bool finish = False;
-	Bool displayTests = True;
+	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 
