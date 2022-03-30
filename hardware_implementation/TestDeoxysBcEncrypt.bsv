@@ -28,7 +28,7 @@ module mkTestDeoxysBcEncrypt(TestIfc);
 	String testName = "DeoxysBcEncrypt Test";
 	int length = 4;
 	Bool finish = False;
-	Bool displayTests = True;
+	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 

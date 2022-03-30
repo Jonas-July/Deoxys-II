@@ -16,6 +16,7 @@ interface DeoxysBcEncryptIfc;
 
 endinterface
 
+(* synthesize *)
 module mkDeoxysBcEncrypt(DeoxysBcEncryptIfc);
 
 	function int addOne(int i);
@@ -24,7 +25,6 @@ module mkDeoxysBcEncrypt(DeoxysBcEncryptIfc);
 
 	AddSubtweakeyIfc astk <- mkAddSubtweakey;
 	Vector#(16, DeoxysBcRoundIfc#(1)) rounds <- mapM(mkDeoxysBcRound, map(addOne, map(fromInteger, genVector)));
-	DeoxysBcRoundIfc#(1) rounds0 <- mkDeoxysBcRound(1);
 
 	method Vector#(16, Bit#(8)) getResult(Vector#(32, Bit#(8)) key, Vector#(16, Bit#(8)) tweak, Vector#(16, Bit#(8)) plaintext);
 		Vector#(16, Bit#(8)) internal_state = reverse(plaintext);

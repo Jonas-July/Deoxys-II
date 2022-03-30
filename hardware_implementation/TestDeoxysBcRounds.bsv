@@ -11,26 +11,26 @@ module mkTestDeoxysBcRound(TestIfc);
 
 	DeoxysBcRoundIfc#(1) round1 <- mkDeoxysBcRound(1);
 
-	Vector#(16, Bit#(8)) state[4] = {replicate(0), replicate(0), unpack(128'h2f2e2d2c2b2a29282726252423222120), unpack(128'h5f8ebdec1b4a79a8d706356493c2f120)};
-	Vector#(16, Bit#(8)) tk1[4] = {replicate(0), replicate(1), unpack(128'h2f2e2d2c2b2a29282726252423222120), unpack(128'h5f8ebdec1b4a79a8d706356493c2f120)};
-	Vector#(16, Bit#(8)) tk2[4] = {replicate(0), replicate(1), unpack(128'h2f2e2d2c2b2a29282726252423222120), unpack(128'h5f8ebdec1b4a79a8d706356493c2f120)};
-	Vector#(16, Bit#(8)) tk3[4] = {replicate(0), replicate(1), unpack(128'h2f2e2d2c2b2a29282726252423222120), unpack(128'h5f8ebdec1b4a79a8d706356493c2f120)};
-	Vector#(4, Vector#(16, Bit#(8))) expectation[4] = {	unpack(512'h6261676b3d3d3d3d6363636363636363000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000),
-								unpack(512'h6360666a3c3c3c3c6262626262626262010101010101010101010101010101010202020202020202020202020202020280808080808080808080808080808080),
-								unpack(512'h2b26212c27222d28232e29242f2a25202b26212c27222d28232e29242f2a25202b26212c27222d28232e29242f2a25202b26212c27222d28232e29242f2a2520),
-								unpack(512'h1b06f1ecd7c2bda8938e79645f4a35201b06f1ecd7c2bda8938e79645f4a35201b06f1ecd7c2bda8938e79645f4a35201b06f1ecd7c2bda8938e79645f4a3520)};
+	Vector#(16, Bit#(8)) testInternalState[4] = 	{replicate(0), replicate(1), unpack(128'h202122232425262728292a2b2c2d2e2f), unpack(128'h20f1c293643506d7a8794a1becbd8e5f)};
+	Vector#(16, Bit#(8)) testTK1[4] = 		{replicate(0), replicate(1), unpack(128'h202122232425262728292a2b2c2d2e2f), unpack(128'h20f1c293643506d7a8794a1becbd8e5f)};
+	Vector#(16, Bit#(8)) testTK2[4] = 		{replicate(0), replicate(1), unpack(128'h202122232425262728292a2b2c2d2e2f), unpack(128'h20f1c293643506d7a8794a1becbd8e5f)};
+	Vector#(16, Bit#(8)) testTK3[4] = 		{replicate(0), replicate(1), unpack(128'h202122232425262728292a2b2c2d2e2f), unpack(128'h20f1c293643506d7a8794a1becbd8e5f)};
+	Vector#(4, Vector#(16, Bit#(8))) expectation[4] = {	unpack(512'h63636363636363633d3d3d3d6b676162000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000),
+								unpack(512'hffffffffffffffffa1a1a1a1f7fbfdfe010101010101010101010101010101010202020202020202020202020202020280808080808080808080808080808080),
+								unpack(512'h697166fa85cb44b9595bcb436d37def327282d222b2c21262f20252a2324292e4f515b455759434d5f414b554749535d93149611951690139710921591129417),
+								unpack(512'h45db75db724063c233ffddbe0af7da10d7a8bdc21becf1065f20354a9364798eaf507a8536d8e20cbe416b9427c9f31d6b54dee18df678032f109aa5c9b23c47)};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "DeoxysBcRound Test";
-	int length = 2;
+	int length = 4;
 	Bool finish = False;
 	Bool displayTests = False;
 
 	function Bool runTest(int testIndex);
 
-		Vector#(4, Vector#(16, Bit#(8))) result = round1.execute(state[testIndex], tk1[testIndex], tk2[testIndex], tk3[testIndex]);
+		Vector#(4, Vector#(16, Bit#(8))) result = round1.execute(testInternalState[testIndex], testTK1[testIndex], testTK2[testIndex], testTK3[testIndex]);
 		Vector#(4, Vector#(16, Bit#(8))) expected = expectation[testIndex];
 		return (pack(result) == pack(expected));
 	endfunction
@@ -39,8 +39,8 @@ module mkTestDeoxysBcRound(TestIfc);
 		return
 			action
 				$display("[%s]Test Number: ", testName, testIndex);
-				$display("[%s]Test Values : %h, %h, %h, %h", testName, state[testIndex], tk1[testIndex], tk2[testIndex], tk3[testIndex]);
-				$display("[%s]Test Result: %h", testName, round1.execute(state[testIndex], tk1[testIndex], tk2[testIndex], tk3[testIndex]));
+				$display("[%s]Test Values: %h, %h, %h, %h", testName, testInternalState[testIndex], testTK1[testIndex], testTK2[testIndex], testTK3[testIndex]);
+				$display("[%s]Test Result: %h", testName, round1.execute(testInternalState[testIndex], testTK1[testIndex], testTK2[testIndex], testTK3[testIndex]));
 			endaction;
 	endfunction
 
