@@ -16,12 +16,12 @@ module mkAddSubtweakey(AddSubtweakeyIfc);
 
 	method Vector#(16, Bit#(8)) addSubtweakey(Vector#(16, Bit#(8)) val, Vector#(16, Bit#(8)) tk1, Vector#(16, Bit#(8)) tk2, Vector#(16, Bit#(8)) tk3, int round);
 		Bit#(8) constant = rcon[round-1];
-		Vector#(16, Bit#(8)) new_arr = unpack(pack(val) ^ pack(tk1) ^ pack(tk2) ^ pack(tk3) ^ pack({8'h62, 8'h61, 8'h67, 8'h6b, constant, constant, constant, constant, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63}));
+		Vector#(16, Bit#(8)) new_arr = unpack(pack(val) ^ pack(tk1) ^ pack(tk2) ^ pack(tk3) ^ pack({8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, 8'h63, constant, constant, constant, constant, 8'h6b, 8'h67, 8'h61, 8'h62}));
 		return new_arr;
 	endmethod
 
 	method Vector#(16, Bit#(8)) addSubtweakeyRound0(Vector#(16, Bit#(8)) val, Vector#(16, Bit#(8)) tk1, Vector#(16, Bit#(8)) tk2, Vector#(16, Bit#(8)) tk3);
-		Vector#(16, Bit#(8)) new_arr = unpack(pack(val) ^ pack(tk1) ^ pack(tk2) ^ pack(tk3) ^ pack({8'h01, 8'h02, 8'h04, 8'h08, 8'h2f, 8'h2f, 8'h2f, 8'h2f, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00}));
+		Vector#(16, Bit#(8)) new_arr = unpack(pack(val) ^ pack(tk1) ^ pack(tk2) ^ pack(tk3) ^ pack({8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h2f, 8'h2f, 8'h2f, 8'h2f, 8'h08, 8'h04, 8'h02, 8'h01}));
 		return new_arr;
 	endmethod
 

@@ -7,20 +7,30 @@ import DeoxysBcRounds::*;
 
 interface DeoxysBcEncryptIfc;
 
+	/*
+		By convention, the result will have the "first" bytes at the lowest positions (i.e. on the right) and the last ones
+		at the highest position (i.e. on the left)
+		Currently, the inputs are expected to be the other way around
+	*/
 	method Vector#(16, Bit#(8)) getResult(Vector#(32, Bit#(8)) key, Vector#(16, Bit#(8)) tweak, Vector#(16, Bit#(8)) plaintext);
 
 endinterface
 
 module mkDeoxysBcEncrypt(DeoxysBcEncryptIfc);
 
+	function int addOne(int i);
+		return i + 1;
+	endfunction
+
 	AddSubtweakeyIfc astk <- mkAddSubtweakey;
-	Vector#(16, DeoxysBcRoundIfc#(1)) rounds <- mapM(mkDeoxysBcRound, map(fromInteger, genVector));
+	Vector#(16, DeoxysBcRoundIfc#(1)) rounds <- mapM(mkDeoxysBcRound, map(addOne, map(fromInteger, genVector)));
+	DeoxysBcRoundIfc#(1) rounds0 <- mkDeoxysBcRound(1);
 
 	method Vector#(16, Bit#(8)) getResult(Vector#(32, Bit#(8)) key, Vector#(16, Bit#(8)) tweak, Vector#(16, Bit#(8)) plaintext);
-		Vector#(16, Bit#(8)) internal_state = plaintext;
-		Vector#(16, Bit#(8)) tk3 = unpack(pack(key)[127:0]);
-		Vector#(16, Bit#(8)) tk2 = unpack(pack(key)[255:128]);
-		Vector#(16, Bit#(8)) tk1 = tweak;
+		Vector#(16, Bit#(8)) internal_state = reverse(plaintext);
+		Vector#(16, Bit#(8)) tk3 = reverse(unpack(pack(key)[255:128]));
+		Vector#(16, Bit#(8)) tk2 = reverse(unpack(pack(key)[127:0]));
+		Vector#(16, Bit#(8)) tk1 = reverse(tweak);
 
 		Vector#(4, Vector#(16, Bit#(8))) round_result = newVector;
 		round_result[3] = internal_state;

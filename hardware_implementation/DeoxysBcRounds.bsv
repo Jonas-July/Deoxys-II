@@ -32,13 +32,16 @@ module mkDeoxysBcRound #(parameter int round)(DeoxysBcRoundIfc#(round))
 		Vector#(16, Bit#(8)) tmp_state = sb.substitute(state);
 		tmp_state = sr.shiftRows(tmp_state);
 		tmp_state = mcs.mixColumns(tmp_state);
+		tk1 = ntk1.nextTweakey(tk1);
+		tk2 = ntk2.nextTweakey(tk2);
+		tk3 = ntk3.nextTweakey(tk3);
 		tmp_state = astk.addSubtweakey(tmp_state, tk1, tk2, tk3, round);
 
 		Vector#(4, Vector#(16, Bit#(8))) vec = newVector;
 		vec[3] = tmp_state;
-		vec[2] = ntk1.nextTweakey(tk1);
-		vec[1] = ntk2.nextTweakey(tk2);
-		vec[0] = ntk3.nextTweakey(tk3);
+		vec[2] = tk1;
+		vec[1] = tk2;
+		vec[0] = tk3;
 		return vec;
 	endmethod
 
