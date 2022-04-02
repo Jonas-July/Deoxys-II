@@ -148,7 +148,7 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 #include <wmmintrin.h>
 void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 	__m128i m = _mm_loadu_si128((__m128i *) plaintext);
-	uint8_t* zero = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	uint8_t zero[INTERNAL_STATE_SIZE] = {0};
 	__m128i z = _mm_loadu_si128((__m128i *) zero);
 
 	v16si tk1;
@@ -176,7 +176,7 @@ void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const
 #include <wmmintrin.h>
 void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 	__m128i m = _mm_loadu_si128((__m128i *) plaintext);
-	uint8_t* zero = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	uint8_t zero[INTERNAL_STATE_SIZE] = {0};
 	__m128i z = _mm_loadu_si128((__m128i *) zero);
 
 
