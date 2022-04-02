@@ -45,8 +45,8 @@ static v16si calculate_subtweakey(v16si tk1, v16si tk2, v16si tk3, int round_ind
 
 }
 
-void add_subtweakey(v16si* internal_state, v16si* tk1, v16si* tk2, v16si* tk3, int i) {
-	v16si subtweakey = calculate_subtweakey(*tk1, *tk2, *tk3, i);
+void add_subtweakey(v16si* internal_state, v16si tk1, v16si tk2, v16si tk3, int i) {
+	v16si subtweakey = calculate_subtweakey(tk1, tk2, tk3, i);
 
 	*internal_state = AddRoundKey(*internal_state, subtweakey);
 }
@@ -83,35 +83,18 @@ void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t
 
 #if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
 
-uint8_t* nextTK1(uint8_t* prevTK1) {
-	v16si vec_newTK1 = *((v16si*)prevTK1);
-	v16si res;
-
-	res = __builtin_shuffle (vec_newTK1, h);
-	memcpy(prevTK1, &res, 16);
-	return prevTK1;
+v16si nextTK1(v16si vec_newTK1) {
+	return __builtin_shuffle (vec_newTK1, h);
 }
 
-uint8_t* nextTK2(uint8_t* prevTK2) {
-	v16si vec_newTK2 = *((v16si*)prevTK2);
-
+v16si nextTK2(v16si vec_newTK2) {
 	vec_newTK2 = (vec_newTK2 << 1) | (((vec_newTK2 & 0x80) >> 7) ^ ((vec_newTK2 & 0x20) >> 5));
-	v16si res;
-
-	res = __builtin_shuffle (vec_newTK2, h);
-	memcpy(prevTK2, &res, 16);
-	return prevTK2;
+	return __builtin_shuffle (vec_newTK2, h);
 }
 
-uint8_t* nextTK3(uint8_t* prevTK3) {
-	v16si vec_newTK3 = *((v16si*)prevTK3);
-
+v16si nextTK3(v16si vec_newTK3) {
 	vec_newTK3 = (vec_newTK3 >> 1) | (((vec_newTK3 & 0x01) << 7) ^ ((vec_newTK3 & 0x40) << 1));
-	v16si res;
-
-	res = __builtin_shuffle (vec_newTK3, h);
-	memcpy(prevTK3, &res, 16);
-	return prevTK3;
+	return __builtin_shuffle (vec_newTK3, h);
 }
 
 
@@ -161,12 +144,41 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 
 #endif // GCC_VECTOR_EXTENSIONS for next tweakeys
 
-#if defined(USE_AES_NI) && USE_AES_NI == 1
+#if defined(USE_AES_NI) && USE_AES_NI == 1 && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
 #include <wmmintrin.h>
-uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 	__m128i m = _mm_loadu_si128((__m128i *) plaintext);
 	uint8_t* zero = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
 	__m128i z = _mm_loadu_si128((__m128i *) zero);
+
+	v16si tk1;
+	v16si tk2;
+	v16si tk3;
+
+	memcpy(&tk3, key, TWEAKEY_SIZE);
+	memcpy(&tk2, &key[TWEAKEY_SIZE], TWEAKEY_SIZE);
+	memcpy(&tk1, tweak, TWEAKEY_SIZE);
+
+	for (int i = 0; i < ROUNDS_NUM; i++) {
+		add_subtweakey(&m, tk1, tk2, tk3, i);
+		m = _mm_aesenc_si128(m, z);
+
+		tk1 = nextTK1(tk1);
+		tk2 = nextTK2(tk2);
+		tk3 = nextTK3(tk3);
+	}
+	add_subtweakey(&m, tk1, tk2, tk3, ROUNDS_NUM);
+
+	_mm_storeu_si128((__m128i *) buffer, m);
+}
+
+#elif defined(USE_AES_NI) && USE_AES_NI == 1 && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 0
+#include <wmmintrin.h>
+void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+	__m128i m = _mm_loadu_si128((__m128i *) plaintext);
+	uint8_t* zero = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	__m128i z = _mm_loadu_si128((__m128i *) zero);
+
 
 	uint8_t tk1[TWEAKEY_SIZE];
 	uint8_t tk2[TWEAKEY_SIZE];
@@ -177,7 +189,6 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 	memcpy(tk1, tweak, TWEAKEY_SIZE);
 
 	for (int i = 0; i < ROUNDS_NUM; i++) {
-
 		add_subtweakey(&m, tk1, tk2, tk3, i);
 		m = _mm_aesenc_si128(m, z);
 
@@ -187,15 +198,42 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 	}
 	add_subtweakey(&m, tk1, tk2, tk3, ROUNDS_NUM);
 
-	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
-	_mm_storeu_si128((__m128i *) ret, m);
+	_mm_storeu_si128((__m128i *) buffer, m);
+}
 
-	return ret;
+#elif defined(USE_AES_NI) && USE_AES_NI == 0 && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+
+	state_t internal_state[1]; // pointer is a bit easier to handle
+	memcpy(internal_state, plaintext, BLOCK_LEN);
+
+	v16si tk1;
+	v16si tk2;
+	v16si tk3;
+
+	memcpy(&tk3, key, TWEAKEY_SIZE);
+	memcpy(&tk2, &key[TWEAKEY_SIZE], TWEAKEY_SIZE);
+	memcpy(&tk1, tweak, TWEAKEY_SIZE);
+
+	for (int i = 0; i < ROUNDS_NUM; i++) {
+
+		add_subtweakey(internal_state, tk1, tk2, tk3, i);
+		SubBytes(internal_state);
+		ShiftRows(internal_state);
+		MixColumns(internal_state);
+
+		tk1 = nextTK1(tk1);
+		tk2 = nextTK2(tk2);
+		tk3 = nextTK3(tk3);
+	}
+	add_subtweakey(internal_state, tk1, tk2, tk3, ROUNDS_NUM);
+
+	memcpy(buffer, internal_state, INTERNAL_STATE_SIZE);
 }
 
 #else
 
-uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 
 	state_t internal_state[1]; // pointer is a bit easier to handle
 	memcpy(internal_state, plaintext, BLOCK_LEN);
@@ -221,9 +259,13 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 	}
 	add_subtweakey(internal_state, tk1, tk2, tk3, ROUNDS_NUM);
 
-	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
-	memcpy(ret, internal_state, INTERNAL_STATE_SIZE);
+	memcpy(buffer, internal_state, INTERNAL_STATE_SIZE);
+}
 
+#endif // USE_AES_NI
+
+uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	Deoxys_BC_encrypt_buffer(ret, key, tweak, plaintext);
 	return ret;
 }
-#endif // USE_AES_NI
