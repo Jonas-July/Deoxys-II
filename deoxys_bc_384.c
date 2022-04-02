@@ -52,33 +52,31 @@ void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t
 }
 
 #else
-uint8_t* XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
+uint8_t* XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant, uint8_t* result_buffer)
 {
-	uint8_t* XOR = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
-	XOR[0] = first[0] ^ second[0] ^ third[0] ^ 1;
-	XOR[1] = first[1] ^ second[1] ^ third[1] ^ 2;
-	XOR[2] = first[2] ^ second[2] ^ third[2] ^ 4;
-	XOR[3] = first[3] ^ second[3] ^ third[3] ^ 8;
+	result_buffer[0] = first[0] ^ second[0] ^ third[0] ^ 1;
+	result_buffer[1] = first[1] ^ second[1] ^ third[1] ^ 2;
+	result_buffer[2] = first[2] ^ second[2] ^ third[2] ^ 4;
+	result_buffer[3] = first[3] ^ second[3] ^ third[3] ^ 8;
 
         for (int i = 4; i < 8; i++)
-		XOR[i] = first[i] ^ second[i] ^ third[i] ^ constant;
+		result_buffer[i] = first[i] ^ second[i] ^ third[i] ^ constant;
 
         for (int i = 8; i < 16; i++)
-		XOR[i] = first[i] ^ second[i] ^ third[i];
+		result_buffer[i] = first[i] ^ second[i] ^ third[i];
 
-	return XOR;
+	return result_buffer;
 }
 
-uint8_t* calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
-	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index]);
-
+uint8_t* calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index, uint8_t* result_buffer) {
+	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index], result_buffer);
 }
 
 void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int i) {
-	uint8_t* subtweakey = calculate_subtweakey(tk1, tk2, tk3, i);
+	uint8_t subtweakey[INTERNAL_STATE_SIZE];
+	calculate_subtweakey(tk1, tk2, tk3, i, subtweakey);
 
 	AddRoundKey(internal_state, subtweakey);
-	free(subtweakey);
 }
 
 #endif // XOR4_subtweakey
@@ -121,13 +119,13 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 #else
 
 uint8_t* nextTK1(uint8_t* prevTK1) {
-	uint8_t* newTK1 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
+	uint8_t newTK1[TWEAKEY_SIZE];
 	for (int i = 0; i < TWEAKEY_SIZE; i++) {
 		newTK1[i] = prevTK1[h[i]];
 	}
-	free(prevTK1);
+	memcpy(prevTK1, newTK1, TWEAKEY_SIZE);
 
-	return newTK1;
+	return prevTK1;
 }
 
 uint8_t* nextTK2(uint8_t* prevTK2) {
@@ -136,13 +134,13 @@ uint8_t* nextTK2(uint8_t* prevTK2) {
 		prevTK2[j] = (prevTK2[j] << 1) | (((prevTK2[j] & 0x80) >> 7) ^ ((prevTK2[j] & 0x20) >> 5));
 	}
 
-	uint8_t* newTK2 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
+	uint8_t newTK2[TWEAKEY_SIZE];
 	for (int i = 0; i < TWEAKEY_SIZE; i++) {
 		newTK2[i] = prevTK2[h[i]];
 	}
-	free(prevTK2);
+	memcpy(prevTK2, newTK2, TWEAKEY_SIZE);
 
-	return newTK2;
+	return prevTK2;
 }
 
 uint8_t* nextTK3(uint8_t* prevTK3) {
@@ -151,13 +149,13 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 		prevTK3[j] = (prevTK3[j] >> 1) | (((prevTK3[j] & 0x01) << 7) ^ ((prevTK3[j] & 0x40) << 1));
 	}
 
-	uint8_t* newTK3 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
+	uint8_t newTK3[TWEAKEY_SIZE];
 	for (int i = 0; i < TWEAKEY_SIZE; i++) {
 		newTK3[i] = prevTK3[h[i]];
 	}
-	free(prevTK3);
+	memcpy(prevTK3, newTK3, TWEAKEY_SIZE);
 
-	return newTK3;
+	return prevTK3;
 }
 
 
@@ -166,12 +164,12 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 
 uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 
-	state_t* internal_state = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	state_t internal_state[1]; // pointer is a bit easier to handle
 	memcpy(internal_state, plaintext, BLOCK_LEN);
 
-	uint8_t* tk1 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
-	uint8_t* tk2 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
-	uint8_t* tk3 = calloc(TWEAKEY_SIZE, sizeof(uint8_t));
+	uint8_t tk1[TWEAKEY_SIZE];
+	uint8_t tk2[TWEAKEY_SIZE];
+	uint8_t tk3[TWEAKEY_SIZE];
 
 	memcpy(tk3, key, TWEAKEY_SIZE);
 	memcpy(tk2, &key[TWEAKEY_SIZE], TWEAKEY_SIZE);
@@ -184,18 +182,13 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 		ShiftRows(internal_state);
 		MixColumns(internal_state);
 
-		tk1 = nextTK1(tk1);
-		tk2 = nextTK2(tk2);
-		tk3 = nextTK3(tk3);
+		nextTK1(tk1);
+		nextTK2(tk2);
+		nextTK3(tk3);
 	}
 	add_subtweakey(internal_state, tk1, tk2, tk3, ROUNDS_NUM);
 
-	free(tk3);
-	free(tk2);
-	free(tk1);
-
 	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
 	memcpy(ret, internal_state, INTERNAL_STATE_SIZE);
-	free(internal_state);
 	return ret;
 }
