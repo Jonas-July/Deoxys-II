@@ -9,6 +9,8 @@ The build step requires the GCC compiler.
 - Run `./build` to build the tests
 - Run `./test` to run the tests
 
+To use AES-NI, append `-maes` to the command in `./build`
+
 # Goals
 
 The goal of this exercise is a working implementation of the Deoxys-II-256-128 cipher. Since there is a current lack of test samples, successful en- and decryption would meet the goal.

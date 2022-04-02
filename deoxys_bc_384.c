@@ -161,6 +161,41 @@ uint8_t* nextTK3(uint8_t* prevTK3) {
 
 #endif // GCC_VECTOR_EXTENSIONS for next tweakeys
 
+#if defined(USE_AES_NI) && USE_AES_NI == 1
+#include <wmmintrin.h>
+uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
+	__m128i m = _mm_loadu_si128((__m128i *) plaintext);
+	uint8_t* zero = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	__m128i z = _mm_loadu_si128((__m128i *) zero);
+
+	uint8_t tk1[TWEAKEY_SIZE];
+	uint8_t tk2[TWEAKEY_SIZE];
+	uint8_t tk3[TWEAKEY_SIZE];
+
+	memcpy(tk3, key, TWEAKEY_SIZE);
+	memcpy(tk2, &key[TWEAKEY_SIZE], TWEAKEY_SIZE);
+	memcpy(tk1, tweak, TWEAKEY_SIZE);
+
+	for (int i = 0; i < ROUNDS_NUM; i++) {
+
+		state_t* s = &m;
+		add_subtweakey(s, tk1, tk2, tk3, i);
+		m = _mm_aesenc_si128(m, z);
+
+		nextTK1(tk1);
+		nextTK2(tk2);
+		nextTK3(tk3);
+	}
+	state_t* s = &m;
+	add_subtweakey(s, tk1, tk2, tk3, ROUNDS_NUM);
+
+	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
+	_mm_storeu_si128((__m128i *) ret, m);
+
+	return ret;
+}
+
+#else
 
 uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext) {
 
@@ -190,5 +225,7 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 
 	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
 	memcpy(ret, internal_state, INTERNAL_STATE_SIZE);
+
 	return ret;
 }
+#endif // USE_AES_NI
