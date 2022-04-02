@@ -31,24 +31,24 @@ static const uint8_t h[16] = {1, 6, 11, 12, 5, 10, 15, 0, 9, 14, 3, 4, 13, 2, 7,
 */
 #if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
 
-v16si XOR4_subtweakey(uint8_t* first, uint8_t* second, uint8_t* third, uint8_t constant)
+v16si XOR4_subtweakey(v16si first, v16si second, v16si third, uint8_t constant)
 {
 
 	v16si RCON = {1, 2, 4, 8, constant, constant, constant, constant, 0, 0, 0, 0, 0, 0, 0, 0};
-	v16si res = (*((v16si*)first)) ^ (*((v16si*)second)) ^ (*((v16si*)third)) ^ RCON;
+	v16si res = first ^ second ^ third ^ RCON;
 
 	return res;
 }
 
-static v16si calculate_subtweakey(uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int round_index) {
+static v16si calculate_subtweakey(v16si tk1, v16si tk2, v16si tk3, int round_index) {
 	return XOR4_subtweakey(tk1, tk2, tk3, RCON[round_index]);
 
 }
 
-void add_subtweakey(state_t* internal_state, uint8_t* tk1, uint8_t* tk2, uint8_t* tk3, int i) {
-	v16si subtweakey = calculate_subtweakey(tk1, tk2, tk3, i);
+void add_subtweakey(v16si* internal_state, v16si* tk1, v16si* tk2, v16si* tk3, int i) {
+	v16si subtweakey = calculate_subtweakey(*tk1, *tk2, *tk3, i);
 
-	AddRoundKey(internal_state, (uint8_t*)(&subtweakey));
+	*internal_state = AddRoundKey(*internal_state, subtweakey);
 }
 
 #else
@@ -178,16 +178,14 @@ uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t con
 
 	for (int i = 0; i < ROUNDS_NUM; i++) {
 
-		state_t* s = &m;
-		add_subtweakey(s, tk1, tk2, tk3, i);
+		add_subtweakey(&m, tk1, tk2, tk3, i);
 		m = _mm_aesenc_si128(m, z);
 
 		nextTK1(tk1);
 		nextTK2(tk2);
 		nextTK3(tk3);
 	}
-	state_t* s = &m;
-	add_subtweakey(s, tk1, tk2, tk3, ROUNDS_NUM);
+	add_subtweakey(&m, tk1, tk2, tk3, ROUNDS_NUM);
 
 	uint8_t* ret = calloc(INTERNAL_STATE_SIZE, sizeof(uint8_t));
 	_mm_storeu_si128((__m128i *) ret, m);

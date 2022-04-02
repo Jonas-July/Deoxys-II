@@ -131,6 +131,14 @@ static const uint8_t sbox_calculation(uint8_t input) {
 
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+v16si AddRoundKey(v16si state, const v16si RoundKey)
+{
+  return state ^ RoundKey;
+}
+
+#else
+
 void AddRoundKey(state_t* state, const uint8_t* RoundKey)
 {
   uint8_t i,j;
@@ -143,6 +151,7 @@ void AddRoundKey(state_t* state, const uint8_t* RoundKey)
   }
 }
 
+#endif // GCC_VECTOR_EXTENSIONS
 
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
