@@ -10,18 +10,6 @@
 #define NONCE_LEN	15 //Nonce length in Deoxys-II is 120 bit
 
 /**
-	buffer contains the message to be padded
-	buffer_len must be greater than zero and less than BLOCK_LEN
-*/
-uint8_t* pad10(uint8_t const* buffer, uint32_t buffer_len)
-{
-	uint8_t* padded = calloc(BLOCK_LEN, sizeof(uint8_t));
-	memcpy(padded, buffer, buffer_len);
-	padded[buffer_len] = 128;
-	return padded;
-}
-
-/**
 	Computes the xor of first and second bytewise
 	both input arrays must be of size BLOCK_LEN
 	also deallocates the input arrays 
@@ -40,48 +28,65 @@ uint8_t* XOR_block(uint8_t* first, uint8_t* second, int length)
 }
 
 /**
+	Computes the xor of first and second bytewise
+	both input arrays must be of size BLOCK_LEN
+	first argument is overwritten with the result
+*/
+void XOR_block_override(uint8_t* first, uint8_t* second, int length)
+{
+        for (int i = 0; i < length; i++) {
+		first[i] = first[i] ^ second[i];
+	}
+}
+
+/**
 	computes one stage of tag generation
 	deallocates tag
 */
-uint8_t* compute_partial_tag(
-		uint8_t const* tag,
+void compute_partial_tag(
+		uint8_t* tag,
 		uint8_t const* key,
 		uint8_t ord_bits, uint8_t ov_bits,
 		uint8_t const* buffer, uint32_t buffer_size)
 {
 	uint32_t la = buffer_size / BLOCK_LEN;
 	uint32_t rest_ad = buffer_size % BLOCK_LEN;
-	uint8_t* tag_tmp = calloc(TAG_LEN, sizeof(uint8_t));
-	memcpy(tag_tmp, tag, TAG_LEN);
 
+	uint8_t tweak[TWEAK_LEN] = {ord_bits | 0, 0, 0, 0,
+				0, 0, 0, 0,
+				0, 0, 0, 0,
+				0, 0, 0, 0};
 
+	uint8_t crypt[BLOCK_LEN] = {0};
 	for (uint32_t i = 0; i < la; i++)
 	{
-		uint8_t tweak[TWEAK_LEN] = {ord_bits | 0, 0, 0, 0,
-					0, 0, 0, 0, 
-					0, 0, 0, 0,
-					i >> 24, i << 8 >> 24, i << 16 >> 24, i << 24 >> 24};
+		unsigned int bigendian = __builtin_bswap32(i);
+		memcpy(&tweak[TWEAK_LEN-4], &bigendian, 4);
 
+		Deoxys_BC_encrypt_buffer(crypt, key, tweak, &buffer[i*BLOCK_LEN]);
 
-		uint8_t* enc = Deoxys_BC_encrypt(key, tweak, &buffer[i*BLOCK_LEN]);
-
-                tag_tmp = XOR_block(tag_tmp, enc, TAG_LEN);
+                XOR_block_override(tag, crypt, TAG_LEN);
+		memset(crypt, 0, BLOCK_LEN);
 	}
 	if (rest_ad)
 	{
 		uint32_t i = la;
-		uint8_t tweak[TWEAK_LEN] = {ov_bits | 0, 0, 0, 0,
+		uint8_t tweak_ov[TWEAK_LEN] = {ov_bits | 0, 0, 0, 0,
 					0, 0, 0, 0, 
 					0, 0, 0, 0,
-					i >> 24, i << 8 >> 24, i << 16 >> 24, i << 24 >> 24};
+					0, 0, 0, 0};
+		unsigned int bigendian = __builtin_bswap32(i);
+		memcpy(&tweak_ov[TWEAK_LEN-4], &bigendian, 4);
 
-		uint8_t* padded = pad10(&buffer[la*BLOCK_LEN], rest_ad);
-		uint8_t* enc = Deoxys_BC_encrypt(key, tweak, padded);
-		tag_tmp = XOR_block(tag_tmp, enc, TAG_LEN);
-		free(padded);
+		// pad last block with 10*
+		uint8_t padded[BLOCK_LEN] = {0};
+		memcpy(padded, &buffer[la*BLOCK_LEN], rest_ad);
+		padded[rest_ad] = 0x80;
+
+		Deoxys_BC_encrypt_buffer(padded, key, tweak_ov, padded);
+                XOR_block_override(tag, padded, TAG_LEN);
+		memset(padded, 0, BLOCK_LEN);
 	}
-
-	return tag_tmp;
 }
 
 uint8_t* encrypt_tag(	uint8_t const* tag, 
@@ -158,16 +163,15 @@ uint8_t* compute_tag(	uint8_t const* key, uint8_t const* nonce,
 					uint8_t const* buffer_message, uint32_t buffer_message_size, 
 					uint8_t const* buffer_ad, uint32_t buffer_ad_size)
 {
-	uint8_t* null_tag = calloc(TAG_LEN, sizeof(uint8_t));
+	uint8_t ad_tag[TAG_LEN] = {0};
+	uint8_t cipher_tag[TAG_LEN] = {0};
 
-	uint8_t* tag1 = compute_partial_tag(null_tag, key, 32, 96, buffer_ad, buffer_ad_size);
-	uint8_t* tag2 = compute_partial_tag(null_tag, key,  0, 64, buffer_message, buffer_message_size);
-	free(null_tag);
+	compute_partial_tag(ad_tag, key, 32, 96, buffer_ad, buffer_ad_size);
+	compute_partial_tag(cipher_tag, key,  0, 64, buffer_message, buffer_message_size);
 
-	uint8_t* xor_tag = XOR_block(tag1, tag2, TAG_LEN);
+	XOR_block_override(ad_tag, cipher_tag, TAG_LEN);
 
-	uint8_t* tag = encrypt_tag(xor_tag, key, nonce);
-	free(xor_tag);
+	uint8_t* tag = encrypt_tag(ad_tag, key, nonce);
 	return tag;
 }
 
