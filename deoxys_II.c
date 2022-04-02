@@ -12,27 +12,9 @@
 /**
 	Computes the xor of first and second bytewise
 	both input arrays must be of size BLOCK_LEN
-	also deallocates the input arrays 
-*/
-uint8_t* XOR_block(uint8_t* first, uint8_t* second, int length)
-{
-	uint8_t* XOR = calloc(length, sizeof(uint8_t));
-        for (int i = 0; i < length; i++) {
-		XOR[i] = first[i] ^ second[i];
-	}
-
-	free(first);
-	free(second);
-
-	return XOR;
-}
-
-/**
-	Computes the xor of first and second bytewise
-	both input arrays must be of size BLOCK_LEN
 	first argument is overwritten with the result
 */
-void XOR_block_override(uint8_t* first, uint8_t* second, int length)
+void XOR_block_override(uint8_t* first, uint8_t const* second, int length)
 {
         for (int i = 0; i < length; i++) {
 		first[i] = first[i] ^ second[i];
@@ -115,9 +97,6 @@ uint8_t* encrypt_message(uint32_t* ciphertext_size,
 	uint32_t ceiled_div = buffer_message_size != 0 ? 1 + ((buffer_message_size - 1) / BLOCK_LEN) : 0;
 	uint32_t ceil_buffer_size = ceiled_div * BLOCK_LEN;
 
-	uint8_t* msg = calloc(ceil_buffer_size, sizeof(uint8_t));
-	memcpy(msg, buffer_message, buffer_message_size);
-
 	uint8_t* cipher = calloc(ceil_buffer_size, sizeof(uint8_t));
 
 	uint8_t padded_nonce[BLOCK_LEN] = 
@@ -138,22 +117,10 @@ uint8_t* encrypt_message(uint32_t* ciphertext_size,
 				tag[12] ^ (i >> 24), tag[13] ^ (i << 8 >> 24), tag[14] ^ (i << 16 >> 24), tag[15] ^ (i << 24 >> 24)
 			};
 
-		uint8_t* stream_blk = Deoxys_BC_encrypt(key, tweak, padded_nonce);
+		Deoxys_BC_encrypt_buffer(&cipher[i*BLOCK_LEN], key, tweak, padded_nonce);
 
-		uint8_t* blk = calloc(BLOCK_LEN, sizeof(uint8_t));
-		memcpy(blk, &msg[i * BLOCK_LEN], BLOCK_LEN);
-
-		uint8_t* cipher_blk = XOR_block(blk, stream_blk, BLOCK_LEN);
-
-
-
-		for (int j = 0; j < BLOCK_LEN; j++)
-		{
-			cipher[i*BLOCK_LEN + j] = cipher_blk[j];
-		}
-
+		XOR_block_override(&cipher[i*BLOCK_LEN], &buffer_message[i * BLOCK_LEN], BLOCK_LEN);
 	}
-	free(msg);
 
 	*ciphertext_size = buffer_message_size;
 
@@ -186,15 +153,11 @@ uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 	uint8_t* ciphertext = encrypt_message(&ciphertext_size, buffer_message, buffer_message_size, key, tag, nonce);
 
 	uint8_t* auth_cipher = calloc(ciphertext_size + TAG_LEN, sizeof(uint8_t));
-	for (unsigned long long i = 0; i < ciphertext_size; i++)
-		auth_cipher[i] = ciphertext[i];
-	for (unsigned long long i = 0; i < TAG_LEN; i++)
-		auth_cipher[ciphertext_size + i] = tag[i];
-
+	memcpy(auth_cipher, ciphertext, ciphertext_size);
+	memcpy(&auth_cipher[ciphertext_size], tag, TAG_LEN);
 	free(ciphertext);
 
 	return auth_cipher;
-
 }
 
 uint8_t* decrypt_message(uint32_t* ciphertext_size,
@@ -224,10 +187,8 @@ uint8_t* Deoxys_II_decrypt_buffer(	int* authentication_failed, uint32_t* buffer_
 	if (authenticated)
 	{
 		*buffer_message_size = decrypted_size;
-		buffer_message = calloc(decrypted_size, sizeof(uint8_t));
-		memcpy(buffer_message, buffer_decrypted, decrypted_size);
+		buffer_message = buffer_decrypted;
 	}
-	free(buffer_decrypted);
 
 	return buffer_message;
 }
