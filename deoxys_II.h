@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+// Set to 1 to use vector extensions
+#define GCC_VECTOR_EXTENSIONS 0
+
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+typedef uint8_t v16si __attribute__ ((vector_size (16)));
+#endif
+
 uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 					uint8_t const* buffer_message, uint32_t buffer_message_size,
 					uint8_t const* buffer_ad, uint32_t buffer_ad_size);
