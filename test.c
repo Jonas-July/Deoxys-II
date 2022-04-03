@@ -181,7 +181,7 @@ int performance_test_1GB() {
 	free(ad);
 
 	double taken = (double)(end - begin) / CLOCKS_PER_SEC;
-	printf("Time taken for encrypting 1GB: %f\n", taken);
+	printf("Time taken for encrypting 1GB: %fs\n", taken);
 	return taken;
 }
 
@@ -205,7 +205,9 @@ int test_case_dec_no_message_no_ad()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -230,7 +232,9 @@ int test_case_dec_no_message_no_ad_wrong_tag()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -255,7 +259,9 @@ int test_case_dec_no_message_with_ad()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -280,7 +286,9 @@ int test_case_dec_no_message_with_ad_wrong_tag()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -305,7 +313,9 @@ int test_case_dec_no_message_with_ad2()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -330,7 +340,9 @@ int test_case_dec_with_message_no_ad()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -355,7 +367,9 @@ int test_case_dec_with_message_no_ad2()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -380,7 +394,9 @@ int test_case_dec_with_message_with_ad()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -405,7 +421,9 @@ int test_case_dec_with_message_with_ad_wrong_tag()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -430,7 +448,9 @@ int test_case_dec_with_message_with_ad2()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -455,7 +475,9 @@ int test_case_dec_extreme()
 	int failed = memcmp(msg, expected, expected_size) == 0 ? 0 : 1;
 	failed += msg_size == expected_size ? 0 : 2;
 	failed += authentication_failed == expected_authentication_failed ? 0 : 4;
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 
 	printf("Result: %s\n", failed ? "Failed" : "Correct");
 	return failed;
@@ -480,7 +502,9 @@ int performance_test_dec_1MB()
 
 	free(ciphertext);
 	free(message);
-	free(msg);
+	if (msg != NULL) {
+		free(msg);
+	}
 	free(ad);
 
 	double taken = (double)(end - begin) / CLOCKS_PER_SEC;
