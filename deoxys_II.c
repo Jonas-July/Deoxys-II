@@ -45,7 +45,7 @@ void XOR_block_override(uint8_t* first, uint8_t const* second, int length)
 */
 void compute_partial_tag(
 		uint8_t* tag,
-		uint8_t const* key,
+		uint8_t const* roundtweakeys,
 		uint8_t ord_bits, uint8_t ov_bits,
 		uint8_t const* buffer, uint32_t buffer_size)
 {
@@ -56,9 +56,6 @@ void compute_partial_tag(
 				0, 0, 0, 0,
 				0, 0, 0, 0,
 				0, 0, 0, 0};
-
-	uint8_t roundtweakeys[17*16];
-	generateRoundTweakeys(roundtweakeys, key);
 
 	uint8_t crypt[BLOCK_LEN] = {0};
 	for (uint32_t i = 0; i < la; i++)
@@ -94,7 +91,7 @@ void compute_partial_tag(
 
 void encrypt_tag(	uint8_t* encrypted_tag,
 			uint8_t const* tag,
-			uint8_t const* key, 
+			uint8_t const* roundtweakeys,
 			uint8_t const* nonce)
 {
 	uint8_t tweak[TWEAK_LEN] = 
@@ -104,7 +101,7 @@ void encrypt_tag(	uint8_t* encrypted_tag,
 				nonce[7], nonce[8], nonce[9], nonce[10], 
 				nonce[11], nonce[12], nonce[13], nonce[14]
 			};
-	Deoxys_BC_encrypt_buffer(encrypted_tag, key, tweak, tag);
+	Deoxys_BC_encrypt_buffer_reuse(encrypted_tag, roundtweakeys, tweak, tag);
 }
 
 /**
@@ -113,7 +110,7 @@ void encrypt_tag(	uint8_t* encrypted_tag,
 */
 uint8_t* encrypt_message(uint32_t* ciphertext_size,
 			uint8_t const* buffer_message, uint32_t buffer_message_size,
-			uint8_t const* key, uint8_t const* tag, uint8_t const* nonce)
+			uint8_t const* roundtweakeys, uint8_t const* tag, uint8_t const* nonce)
 {
 	uint32_t ceiled_div = buffer_message_size != 0 ? 1 + ((buffer_message_size - 1) / BLOCK_LEN) : 0;
 	uint32_t ceil_buffer_size = ceiled_div * BLOCK_LEN;
@@ -128,8 +125,6 @@ uint8_t* encrypt_message(uint32_t* ciphertext_size,
 				nonce[11], nonce[12], nonce[13], nonce[14]
 			};
 
-	uint8_t roundtweakeys[17*16];
-	generateRoundTweakeys(roundtweakeys, key);
 		uint8_t tweak[TWEAK_LEN] = 
 			{
 				 128 | tag[0], tag[1], tag[2], tag[3],
@@ -157,30 +152,33 @@ uint8_t* encrypt_message(uint32_t* ciphertext_size,
 	return cipher;
 }
 
-void compute_tag(uint8_t* tag,	 	uint8_t const* key, uint8_t const* nonce,
+void compute_tag(uint8_t* tag,	 	uint8_t const* roundtweakeys, uint8_t const* nonce,
 					uint8_t const* buffer_message, uint32_t buffer_message_size, 
 					uint8_t const* buffer_ad, uint32_t buffer_ad_size)
 {
 	uint8_t ad_tag[TAG_LEN] = {0};
 	uint8_t cipher_tag[TAG_LEN] = {0};
 
-	compute_partial_tag(ad_tag, key, 32, 96, buffer_ad, buffer_ad_size);
-	compute_partial_tag(cipher_tag, key,  0, 64, buffer_message, buffer_message_size);
+	compute_partial_tag(ad_tag, roundtweakeys, 32, 96, buffer_ad, buffer_ad_size);
+	compute_partial_tag(cipher_tag, roundtweakeys,  0, 64, buffer_message, buffer_message_size);
 
 	XOR_block_override(ad_tag, cipher_tag, TAG_LEN);
 
-	encrypt_tag(tag, ad_tag, key, nonce);
+	encrypt_tag(tag, ad_tag, roundtweakeys, nonce);
 }
 
 uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 					uint8_t const* buffer_message, uint32_t buffer_message_size,
 					uint8_t const* buffer_ad, uint32_t buffer_ad_size)
 {
+	uint8_t roundtweakeys[17*16];
+	generateRoundTweakeys(roundtweakeys, key);
+
 	uint8_t tag[TAG_LEN];
-	compute_tag(tag, key, nonce, buffer_message, buffer_message_size, buffer_ad, buffer_ad_size);
+	compute_tag(tag, roundtweakeys, nonce, buffer_message, buffer_message_size, buffer_ad, buffer_ad_size);
 
 	uint32_t ciphertext_size;
-	uint8_t* ciphertext = encrypt_message(&ciphertext_size, buffer_message, buffer_message_size, key, tag, nonce);
+	uint8_t* ciphertext = encrypt_message(&ciphertext_size, buffer_message, buffer_message_size, roundtweakeys, tag, nonce);
 
 	uint8_t* auth_cipher = calloc(ciphertext_size + TAG_LEN, sizeof(uint8_t));
 	memcpy(auth_cipher, ciphertext, ciphertext_size);
@@ -192,9 +190,9 @@ uint8_t* Deoxys_II_encrypt_buffer(	uint8_t const* key, uint8_t const* nonce,
 
 uint8_t* decrypt_message(uint32_t* ciphertext_size,
 			uint8_t const* buffer_message, uint32_t buffer_message_size,
-			uint8_t const* key, uint8_t const* tag, uint8_t const* nonce)
+			uint8_t const* roundtweakeys, uint8_t const* tag, uint8_t const* nonce)
 {
-	return encrypt_message(ciphertext_size, buffer_message, buffer_message_size, key, tag, nonce);
+	return encrypt_message(ciphertext_size, buffer_message, buffer_message_size, roundtweakeys, tag, nonce);
 }
 
 uint8_t* Deoxys_II_decrypt_buffer(	int* authentication_failed, uint32_t* buffer_message_size,
@@ -202,11 +200,14 @@ uint8_t* Deoxys_II_decrypt_buffer(	int* authentication_failed, uint32_t* buffer_
 					uint8_t const* buffer_ciphertext, uint32_t buffer_ciphertext_size,
 					uint8_t const* buffer_ad, uint32_t buffer_ad_size)
 {
+	uint8_t roundtweakeys[17*16];
+	generateRoundTweakeys(roundtweakeys, key);
+
 	uint32_t decrypted_size;
-	uint8_t* buffer_decrypted = decrypt_message(&decrypted_size, buffer_ciphertext, buffer_ciphertext_size, key, tag, nonce);
+	uint8_t* buffer_decrypted = decrypt_message(&decrypted_size, buffer_ciphertext, buffer_ciphertext_size, roundtweakeys, tag, nonce);
 
 	uint8_t auth_tag[TAG_LEN];
-	compute_tag(auth_tag, key, nonce, buffer_decrypted, decrypted_size, buffer_ad, buffer_ad_size);
+	compute_tag(auth_tag, roundtweakeys, nonce, buffer_decrypted, decrypted_size, buffer_ad, buffer_ad_size);
 
 	int not_authenticated = memcmp(auth_tag, tag, TAG_LEN) == 0 ? 0 : 1;
 	*authentication_failed = not_authenticated;
