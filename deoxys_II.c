@@ -9,6 +9,22 @@
 #define TWEAK_LEN	16 //Tweak length in Deoxys is 128 bit
 #define NONCE_LEN	15 //Nonce length in Deoxys-II is 120 bit
 
+#if defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+
+/**
+	Computes the xor of first and second bytewise
+	both input arrays must be of size BLOCK_LEN
+	first argument is overwritten with the result
+*/
+void XOR_block_override(uint8_t* first, uint8_t const* second, int length)
+{
+	v16si* f = first;
+	v16si* s = second;
+	*f = *f ^ *s;
+}
+
+#else
+
 /**
 	Computes the xor of first and second bytewise
 	both input arrays must be of size BLOCK_LEN
@@ -20,6 +36,8 @@ void XOR_block_override(uint8_t* first, uint8_t const* second, int length)
 		first[i] = first[i] ^ second[i];
 	}
 }
+
+#endif // GCC_VECTOR_EXTENSIONS
 
 /**
 	computes one stage of tag generation
@@ -39,13 +57,16 @@ void compute_partial_tag(
 				0, 0, 0, 0,
 				0, 0, 0, 0};
 
+	uint8_t roundtweakeys[17*16];
+	generateRoundTweakeys(roundtweakeys, key);
+
 	uint8_t crypt[BLOCK_LEN] = {0};
 	for (uint32_t i = 0; i < la; i++)
 	{
 		unsigned int bigendian = __builtin_bswap32(i);
 		memcpy(&tweak[TWEAK_LEN-4], &bigendian, 4);
 
-		Deoxys_BC_encrypt_buffer(crypt, key, tweak, &buffer[i*BLOCK_LEN]);
+		Deoxys_BC_encrypt_buffer_reuse(crypt, roundtweakeys, tweak, &buffer[i*BLOCK_LEN]);
 
                 XOR_block_override(tag, crypt, TAG_LEN);
 		memset(crypt, 0, BLOCK_LEN);
@@ -65,7 +86,7 @@ void compute_partial_tag(
 		memcpy(padded, &buffer[la*BLOCK_LEN], rest_ad);
 		padded[rest_ad] = 0x80;
 
-		Deoxys_BC_encrypt_buffer(padded, key, tweak_ov, padded);
+		Deoxys_BC_encrypt_buffer_reuse(padded, roundtweakeys, tweak_ov, padded);
                 XOR_block_override(tag, padded, TAG_LEN);
 		memset(padded, 0, BLOCK_LEN);
 	}
@@ -107,20 +128,29 @@ uint8_t* encrypt_message(uint32_t* ciphertext_size,
 				nonce[11], nonce[12], nonce[13], nonce[14]
 			};
 
-	for (int i = 0; i < ceiled_div; i++)
-	{
+	uint8_t roundtweakeys[17*16];
+	generateRoundTweakeys(roundtweakeys, key);
 		uint8_t tweak[TWEAK_LEN] = 
 			{
 				 128 | tag[0], tag[1], tag[2], tag[3],
 				tag[ 4], tag[ 5], tag[ 6], tag[ 7], 
 				tag[ 8], tag[ 9], tag[10], tag[11], 
-				tag[12] ^ (i >> 24), tag[13] ^ (i << 8 >> 24), tag[14] ^ (i << 16 >> 24), tag[15] ^ (i << 24 >> 24)
+				tag[12], tag[13], tag[14], tag[15]
 			};
+	for (int i = 0; i < ceiled_div; i++)
+	{
+		unsigned int bigendian = __builtin_bswap32(i);
+		unsigned int xor;
+		memcpy(&xor, &tag[12], sizeof(unsigned int));
+		unsigned int res = xor ^ bigendian;
+		memcpy(&tweak[12], &res, sizeof(unsigned int));
 
-		Deoxys_BC_encrypt_buffer(&cipher[i*BLOCK_LEN], key, tweak, padded_nonce);
+		Deoxys_BC_encrypt_buffer_reuse(&cipher[i*BLOCK_LEN], roundtweakeys, tweak, padded_nonce);
 
 		XOR_block_override(&cipher[i*BLOCK_LEN], &buffer_message[i * BLOCK_LEN], BLOCK_LEN);
 	}
+	//free(tk2);
+	//free(tk3);
 
 	*ciphertext_size = buffer_message_size;
 

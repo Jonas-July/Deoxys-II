@@ -9,5 +9,7 @@
 void Deoxys_BC_encrypt_buffer(uint8_t* buffer, uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext);
 uint8_t* Deoxys_BC_encrypt(uint8_t const* key, uint8_t const* tweak, uint8_t const* plaintext);
 
+void generateRoundTweakeys(uint8_t* tweakeys2, uint8_t const* key);
+void Deoxys_BC_encrypt_buffer_reuse(uint8_t* buffer, uint8_t const* tweakeys2, uint8_t const* tweak, uint8_t const* plaintext);
 
 #endif
