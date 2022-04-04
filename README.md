@@ -11,7 +11,7 @@ The build step requires the GCC compiler.
 
 To use AES-NI, append `-maes` to the command in `./build`
 
-To fully utilize vector instructions, append `-msse3` to the command in `./build`
+To fully utilize vector instructions, append `-mssse3` to the command in `./build`
 
 The options also need to be enabled in `tiny_aes.h` and `deoxys_II.h`.
 
