@@ -14,6 +14,7 @@ import TestNextTweakey::*;
 import TestAddSubtweakey::*;
 import TestDeoxysBcRounds::*;
 import TestDeoxysBcEncrypt::*;
+import TestTagGeneration::*;
 
 (* synthesize *)
 module mkTesting(TestIfc);
@@ -29,13 +30,15 @@ module mkTesting(TestIfc);
 	TestIfc rounds <- mkTestDeoxysBcRound;
 	TestIfc deoxysBc <- mkTestDeoxysBcEncrypt;
 
-	TestIfc tests[9] = {sub, inv, shift, mixcols, mixsingle, nextTK, addSTK, rounds, deoxysBc};
+        TestIfc tagGen <- mkTestTagGeneration;
+
+	TestIfc tests[10] = {sub, inv, shift, mixcols, mixsingle, nextTK, addSTK, rounds, deoxysBc, tagGen};
 
 	/*
 		Configuration of the test
 	*/
 	String testName = "All tests";
-	int length = 9;
+	int length = 10;
 	Bool finish = True;
 
 	function Bool runTest(int testIndex);
