@@ -1,1 +1,25 @@
-gcc -O2 -o test test.c deoxys_II.c deoxys_bc_384.c tiny_aes.c
+exec="gcc -O2 -o test test.c deoxys_II.c deoxys_bc_384.c tiny_aes.c"
+
+case "$1" in
+	"aes" )
+		useaes=true;;
+	"vector" )
+		usevectors=true;;
+	"vector-aes" )
+		useaes=true
+		usevectors=true;;
+esac
+
+if [ "$useaes" ]; then
+    exec+=" -DUSE_AES_NI=1 -maes"
+fi
+if [ "$usevectors" ]; then
+    exec+=" -DGCC_VECTOR_EXTENSIONS=1 -mssse3"
+fi
+if [ "$nolut" ]; then
+    exec+=" -DNO_LUT=1 -mssse3"
+fi
+
+echo "$exec"
+
+$exec

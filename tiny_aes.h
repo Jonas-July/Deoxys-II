@@ -5,12 +5,6 @@
 
 #define USE_LOOKUP_TABLE 1
 
-// Set to 1 to use vector extensions
-#define GCC_VECTOR_EXTENSIONS 0
-
-// Set to 1 to use AES NI
-#define USE_AES_NI 0
-
 /*****************************************************************************/
 /* Private variables:                                                        */
 /*****************************************************************************/
