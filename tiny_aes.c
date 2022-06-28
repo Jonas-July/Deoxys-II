@@ -1,14 +1,21 @@
-#include <string.h>
-#include <stdlib.h>
+/*
+	Copyright 2021, 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
 
-#include "tiny_aes.h"
-
-/**
 	This file contains standard AES functions
 	taken from tiny-aes AES implementation
 	by kokke, available on GitHub
 	https://github.com/kokke/tiny-AES-c
+
+	Last modified: 2022-06-29 by Jonas July
 */
+
+#include <string.h>
+#include <stdlib.h>
+
+#include "tiny_aes.h"
 
 #if defined(USE_LOOKUP_TABLE) && USE_LOOKUP_TABLE == 1
 
