@@ -1,6 +1,8 @@
 # Deoxys-II
 
-This is an implementation of the Deoxys-II algorithm described in `deoxys_v143.pdf`.
+This is an implementation of the Deoxys-II algorithm described in (the paper)[https://thomaspeyrin.github.io/web/assets/docs/papers/Jean-etal-JoC2021.pdf].
+
+More infos on (this Google Site)[https://sites.google.com/view/deoxyscipher]
 
 # Usage
 
@@ -9,11 +11,11 @@ The build step requires the GCC compiler.
 - Run `./build` to build the tests
 - Run `./test` to run the tests
 
-To use AES-NI, append `-maes` to the command in `./build`
+To use AES-NI, run `./build aes`
 
-To fully utilize vector instructions, append `-mssse3` to the command in `./build`
+To fully utilize vector instructions, run `./build vector`
 
-The options also need to be enabled in `tiny_aes.h` and `deoxys_II.h`.
+For both, use the option `vector-aes`.
 
 # Goals
 
