@@ -1,8 +1,8 @@
 # Deoxys-II
 
-This is an implementation of the Deoxys-II algorithm described in (the paper)[https://thomaspeyrin.github.io/web/assets/docs/papers/Jean-etal-JoC2021.pdf].
+This is an implementation of the Deoxys-II algorithm described in [the paper](https://thomaspeyrin.github.io/web/assets/docs/papers/Jean-etal-JoC2021.pdf).
 
-More infos on (this Google Site)[https://sites.google.com/view/deoxyscipher]
+More infos on [this Google Site](https://sites.google.com/view/deoxyscipher)
 
 # Usage
 
