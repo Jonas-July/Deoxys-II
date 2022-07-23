@@ -1,11 +1,12 @@
 /*
-	Copyright Jonas July 2022.
-	Licensed under the EUPL-1.2 or later.
+	Copyright 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
 
-	Implementation of the Deoxys-AE2 AEAD Operating Mode as described in
-	https://github.com/deoxys-crypto/deoxys-tbc/blob/master/draft-irtf-cfrg-deoxys-tbc.md
+	Implementation of the Deoxys-AE2 AEAD Operating Mode
 
-	Last modified: 2022-05-29 by Jonas July
+	Last modified: 2022-07-23 by Jonas July
 */
 #include <stdlib.h>
 #include <string.h>

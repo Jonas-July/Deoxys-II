@@ -1,3 +1,13 @@
+/*
+	Copyright 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
+
+	Test cases for the Deoxys-AE2 cipher
+
+	Last modified: 2022-07-23 by Jonas July
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,14 +15,6 @@
 #include <time.h>
 
 #include "deoxys_AE2.h"
-
-/*
-	Test cases are based on the ones used for the Go implementation by oasisprotocol:
-	https://github.com/oasisprotocol/deoxysii
-	They are called official, but I wasn't able to find a source for that claim
-	The paper itself does not provide test cases
-*/
-
 
 // Test vector 1
 int test_case_no_message_no_ad() {
