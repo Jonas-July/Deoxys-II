@@ -1,3 +1,13 @@
+/*
+	Copyright 2021, 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
+
+	Test cases for the Deoxys-II-256 cipher
+
+	Last modified: 2022-06-29 by Jonas July
+*/
 
 #include <stdio.h>
 #include <stdlib.h>

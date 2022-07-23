@@ -1,3 +1,15 @@
+/*
+	Copyright 2021, 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
+
+	Implementation of Deoxys-TBC-384
+	with different optimizations like vectorization or hardware AES
+
+	Last modified: 2022-06-29 by Jonas July
+*/
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -212,7 +224,7 @@ void Deoxys_BC_encrypt_buffer_reuse(uint8_t* buffer, uint8_t const* roundTweakey
 	_mm_storeu_si128((__m128i *) buffer, m);
 }
 
-#elif defined(USE_AES_NI) && USE_AES_NI == 1 && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 0
+#elif defined(USE_AES_NI) && USE_AES_NI == 1 && (!defined(GCC_VECTOR_EXTENSIONS) || GCC_VECTOR_EXTENSIONS == 0)
 #include <wmmintrin.h>
 void XOR3(uint8_t* first, uint8_t const* second, uint8_t const* third) {
 	for (int i = 0; i < INTERNAL_STATE_SIZE; i++) {
@@ -243,7 +255,7 @@ void Deoxys_BC_encrypt_buffer_reuse(uint8_t* buffer, uint8_t const* roundTweakey
 	_mm_storeu_si128((__m128i *) buffer, m);
 }
 
-#elif defined(USE_AES_NI) && USE_AES_NI == 0 && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
+#elif (!defined(USE_AES_NI) || USE_AES_NI == 0) && defined(GCC_VECTOR_EXTENSIONS) && GCC_VECTOR_EXTENSIONS == 1
 void Deoxys_BC_encrypt_buffer_reuse(uint8_t* buffer, uint8_t const* roundTweakeys, uint8_t const* tweak, uint8_t const* plaintext) {
 
 	state_t internal_state[1]; // pointer is a bit easier to handle

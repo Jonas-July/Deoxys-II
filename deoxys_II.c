@@ -1,3 +1,15 @@
+/*
+	Copyright 2021, 2022 Jonas July.
+	Licensed under the EUPL-1.2-or-later.
+	You may obtain a copy of the Licence at:
+	https://joinup.ec.europa.eu/collection/eupl
+
+	Implementation of the Deoxys-II-256 AEAD cipher
+	utilizing Deoxys-TBC-384
+
+	Last modified: 2022-06-29 by Jonas July
+*/
+
 #include <stdlib.h>
 #include <string.h>
 
